@@ -101,7 +101,7 @@ HTML_TEMPLATE = """
                 <!-- LIVE PRICE TILES -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {% for sym_data in live_data %}
-                    <div class="glass p-6 relative overflow-hidden">
+                    <div class="glass p-6 relative overflow-hidden border-b-2 border-b-blue-500/20">
                         <div class="flex justify-between items-start mb-4">
                             <span class="text-xs font-black tracking-tighter text-blue-400 uppercase">{{ sym_data.symbol }}</span>
                             <span class="text-[9px] mono text-slate-600">LIVE_TICK</span>
@@ -111,6 +111,23 @@ HTML_TEMPLATE = """
                             <span class="text-[10px] mb-1 {{ 'text-emerald-400' if sym_data.spread < 20 else 'text-yellow-400' }}">S: {{ sym_data.spread }}</span>
                         </div>
                     </div>
+                    {% endfor %}
+                    
+                    {# Warning for missing symbols #}
+                    {% for sym in active_symbols %}
+                        {% set found = False %}
+                        {% for d in live_data %}{% if d.symbol == sym %}{% set found = True %}{% endif %}{% endfor %}
+                        {% if not found %}
+                        <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-xs font-black tracking-tighter text-red-400 uppercase">{{ sym }}</span>
+                                <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
+                            </div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                Missing from MT5 Market Watch
+                            </div>
+                        </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
 
