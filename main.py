@@ -48,12 +48,18 @@ def main():
         while True:
             for symbol in Config.SYMBOLS:
                 try:
+                    logger.info(f"Scanning {symbol}...")
                     # 1. Refresh Account & Symbol Data
                     df = MT5Client.get_market_data(symbol, Config.TIMEFRAME)
                     symbol_info = mt5.symbol_info(symbol)
                     account_info = mt5.account_info()
                     
-                    if df.empty or not symbol_info or not account_info:
+                    if df.empty:
+                        logger.warning(f"No price data found for {symbol}. Is it in Market Watch?")
+                        continue
+                    
+                    if not symbol_info:
+                        logger.warning(f"Could not fetch symbol info for {symbol}.")
                         continue
 
                     # 2. ADVANCED MANAGEMENT: Break-even & Partial TP
