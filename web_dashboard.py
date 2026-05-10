@@ -6,331 +6,296 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+import sqlite3
 import pandas as pd
-import mplfinance as mpf
-import io
-from flask import Response
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 db = TradingDatabase()
 
-# --- NEXT LEVEL COMMAND CENTER UI ---
+# --- ENTERPRISE AI HUB: V13.0 (FINY COMMAND) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXON | Next Level Command</title>
+    <title>AXON | Intelligence Core</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #08090d; --panel: #11141d; --border: rgba(255, 255, 255, 0.03); --accent: #3b82f6; }
-        body { background-color: var(--bg); color: #e2e8f0; font-family: 'Outfit', sans-serif; overflow-x: hidden; letter-spacing: -0.01em; }
-        .glass { background: var(--panel); border: 1px solid var(--border); border-radius: 1.25rem; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
+        :root { --bg: #020305; --panel: #090c14; --border: #161c2b; --accent: #3b82f6; --finy: #a855f7; }
+        body { background: var(--bg); color: #94a3b8; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; margin: 0; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .neon-blue { box-shadow: 0 0 30px rgba(59, 130, 246, 0.1); border-top: 2px solid var(--accent); }
-        .log-window { background: #000; border: 1px solid #1a1d26; height: 280px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 1.25rem; color: #64748b; line-height: 1.6; }
-        .price-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-left: 2px solid transparent; }
-        .price-card:hover { transform: translateY(-4px); background: #161a27; border-left-color: var(--accent); }
-        .price-up { color: #10b981; }
-        .price-down { color: #f43f5e; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 1rem; }
+        
+        /* RAIL */
+        .sidebar-rail { width: 70px; background: #05070a; border-right: 1px solid var(--border); height: 100vh; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 1.5rem 0; z-index: 50; }
+        .nav-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; margin-bottom: 1rem; color: #334155; cursor: pointer; transition: all 0.2s; }
+        .nav-btn:hover { color: white; background: rgba(255,255,255,0.03); }
+        .nav-btn.active { color: white; background: var(--accent); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        .nav-btn.finy-btn { color: var(--finy); border: 1px solid rgba(168, 85, 247, 0.2); }
+        .nav-btn.finy-btn.active { background: var(--finy); color: white; box-shadow: 0 0 20px rgba(168, 85, 247, 0.3); }
+
+        /* HUD */
+        .hud-stat { border-right: 1px solid var(--border); padding: 0 2rem; }
+        .hud-stat:last-child { border-right: none; }
+        
+        /* TICKER */
+        .asset-tile { position: relative; min-width: 120px; border: 1px solid var(--border); border-radius: 0.6rem; padding: 0.8rem; background: rgba(255,255,255,0.01); display: flex; flex-direction: column; gap: 0.5rem; transition: all 0.2s; }
+        .asset-tile:hover { border-color: var(--accent); background: rgba(255,255,255,0.03); }
+        .remove-trigger { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; opacity: 0; cursor: pointer; border: 1px solid rgba(244, 63, 94, 0.1); }
+        .asset-tile:hover .remove-trigger { opacity: 0.6; }
+        .price-sq { padding: 4px; border-radius: 4px; font-size: 13px; font-weight: 800; text-align: center; font-family: 'JetBrains Mono'; }
+        .sq-up { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .sq-down { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
+        
+        /* CHAT INTERFACE */
+        .finy-drawer { position: fixed; right: 0; top: 0; width: 450px; height: 100vh; background: #070a0f; border-left: 1px solid var(--border); transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; display: flex; flex-direction: column; box-shadow: -30px 0 60px rgba(0,0,0,0.6); }
+        .finy-drawer.open { transform: translateX(0); }
+        .chat-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+        .chat-msg { max-width: 90%; padding: 1rem; border-radius: 1rem; font-size: 0.9rem; line-height: 1.6; }
+        .msg-finy { background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.1); color: #e9d5ff; align-self: flex-start; }
+        .msg-user { background: var(--accent); color: white; align-self: flex-end; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2); }
+        
+        .activity-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; margin-top: 0.5rem; }
+        .dive-btn { background: var(--finy); color: white; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s; margin-top: 0.75rem; }
+        .dive-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
     </style>
 </head>
-<body class="p-6 md:p-12">
-    <!-- CHART MODAL -->
-    <div id="chart-modal" class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 hidden p-4 sm:p-12">
-        <div class="glass w-full h-full max-w-7xl relative overflow-hidden flex flex-col border-white/5">
-            <div class="flex justify-between items-center p-6 border-b border-white/5 bg-[#11141d]">
-                <div class="flex items-center gap-6">
-                    <div class="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-                        <i data-lucide="candlestick-chart" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 id="chart-title" class="text-sm font-black text-white uppercase tracking-[0.2em]">MT5_QUANTUM_STREAM</h2>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Direct Terminal Node // 1:1 Execution Mirror</p>
-                    </div>
-                </div>
-                <button class="w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-all" onclick="closeChart()">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <div class="flex-1 bg-black flex items-center justify-center p-8 overflow-hidden">
-                <img id="mt5-chart-img" class="w-full h-full object-contain rounded-xl shadow-2xl" src="">
-            </div>
-            <div class="p-4 bg-[#11141d] border-t border-white/5 flex justify-between items-center px-10">
-                <div class="flex items-center gap-8">
-                    <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span class="text-[10px] mono text-slate-400 font-bold uppercase">Uptime: Stable</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span class="text-[10px] mono text-slate-400 font-bold uppercase">Source: MT5_BRIDGE</span>
-                    </div>
-                </div>
-                <div class="flex gap-6">
-                    <span class="text-[10px] mono text-blue-400 font-black tracking-widest bg-blue-500/5 px-4 py-2 rounded-lg">POSITIONS_VISIBLE</span>
-                </div>
-            </div>
+<body class="flex">
+    <!-- ICON RAIL -->
+    <aside class="sidebar-rail">
+        <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center mb-10 shadow-lg shadow-blue-500/30">
+            <i data-lucide="zap" class="text-white w-6 h-6"></i>
         </div>
-    </div>
+        <div class="nav-btn active" onclick="switchTab('terminal', this)"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+        <div class="nav-btn" onclick="switchTab('settings', this)"><i data-lucide="settings" class="w-5 h-5"></i></div>
+        
+        <div class="mt-auto space-y-4">
+            <div id="finy-toggle" class="nav-btn finy-btn" onclick="toggleFiny()"><i data-lucide="bot" class="w-6 h-6"></i></div>
+            <a href="/logout" class="nav-btn text-red-500/40 hover:text-red-500 transition-colors"><i data-lucide="power" class="w-5 h-5"></i></a>
+        </div>
+    </aside>
 
-    <div class="max-w-[1700px] mx-auto">
-        <!-- HEADER -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8">
-            <div class="flex items-center gap-6">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-500/20 group cursor-pointer">
-                    <i data-lucide="zap" class="text-white w-8 h-8 group-hover:scale-110 transition-transform"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-black tracking-tighter uppercase italic leading-none mb-3 bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">AxonAlgo <span class="text-blue-500 text-xl not-italic opacity-40 ml-2">v3.0</span></h1>
-                    <div class="flex items-center gap-4 text-[10px] mono font-bold text-slate-500 uppercase tracking-widest">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Latency: <span id="header-latency" class="text-emerald-400">0ms</span>
-                        </div>
-                        <div class="w-px h-3 bg-white/10"></div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="activity" class="w-3 h-3 text-blue-500"></i>
-                            Engine: <span class="text-blue-400">Quantum_Active</span>
-                        </div>
-                    </div>
-                </div>
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- COMMAND HUD -->
+        <header class="h-24 border-b border-white/5 flex items-center px-10 bg-[#07090f]/90 backdrop-blur-xl">
+            <div class="flex flex-1 items-center">
+                <div class="hud-stat"><span class="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-1">Equity Exposure</span><span id="account-equity" class="text-xl font-bold text-white mono">$0.00</span></div>
+                <div class="hud-stat"><span class="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-1">Margin Strength</span><span id="margin-level" class="text-xl font-bold text-emerald-500 mono">0%</span></div>
+                <div class="hud-stat"><span class="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-1">Floating Intel</span><span id="live-pnl" class="text-xl font-black mono italic text-white">$0.00</span></div>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="glass px-8 py-4 flex flex-col items-end">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Global Net PnL</span>
-                    <span id="global-pnl" class="text-2xl font-black text-emerald-400 italic font-mono tracking-tighter">$0.00</span>
-                </div>
-                <a href="/logout" class="bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 px-8 py-5 rounded-2xl text-[10px] uppercase font-black tracking-widest text-red-400 transition-all flex items-center gap-3">
-                    <i data-lucide="power" class="w-4 h-4"></i>
-                    Terminate
-                </a>
+            <div class="flex items-center gap-2 px-6 py-2 bg-emerald-500/5 rounded-full border border-emerald-500/10">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span class="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">Core Synchronized</span>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <!-- LEFT: CONTROLS -->
-            <div class="xl:col-span-1 space-y-8">
-                <div class="glass p-8 neon-glow border-t-2 border-blue-600">
-                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-500">Execution Parameters</h3>
-                    <form action="/update" method="POST" class="space-y-6">
-                        <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">System State</label>
-                            <select name="trading_enabled" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold text-xs outline-none focus:border-blue-500 transition-all">
-                                <option value="True" {{ 'selected' if settings.trading_enabled }}>AUTH_EXECUTE_LIVE</option>
-                                <option value="False" {{ 'selected' if not settings.trading_enabled }}>AUTH_READ_ONLY</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Risk Exposure (%)</label>
-                            <input type="number" step="0.1" name="risk_pct" value="{{ settings.risk_pct }}" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold outline-none focus:border-blue-500 transition-all">
-                        </div>
-                        <input type="hidden" name="symbols" value="{{ settings.symbols }}">
-                        <button type="submit" class="w-full bg-blue-600 p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-blue-500/20">Sync Global State</button>
-                    </form>
-                </div>
-
-                <div class="glass p-8 border-t-2 border-white/5">
-                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-slate-400">Portfolio Core</h3>
-                    <div id="portfolio-list" class="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2">
-                        <!-- Portfolios injected via JS -->
-                    </div>
-                    <form action="/add_symbol" method="POST" class="space-y-4">
-                        <input type="text" name="symbol" placeholder="ADD_SYMBOL..." class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none transition-all">
-                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">Add to Core</button>
-                    </form>
-                </div>
+        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+            <!-- ASSET RAIL -->
+            <div class="panel p-5 flex items-center gap-5">
+                <form action="/add_symbol" method="POST" class="pr-5 border-r border-white/10">
+                    <input type="text" name="symbol" placeholder="+" class="w-16 bg-black border border-white/5 px-2 py-3 rounded-lg text-xs font-black outline-none focus:border-blue-500 text-center uppercase">
+                </form>
+                <div class="flex flex-wrap items-center gap-4" id="asset-rail"></div>
             </div>
 
-            <!-- CENTER: LIVE MATRIX -->
-            <div class="xl:col-span-3 space-y-8">
-                <div id="price-matrix" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Price cards injected via JS -->
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass p-8 border-t-2 border-emerald-500/30">
-                        <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-emerald-400">Execution Stream</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-[10px] mono text-left">
-                                <thead class="text-slate-600 border-b border-white/5">
-                                    <tr><th class="pb-3 uppercase">Ticket</th><th class="pb-3 uppercase">Asset</th><th class="pb-3 uppercase text-right">Profit</th></tr>
-                                </thead>
-                                <tbody id="positions-body" class="divide-y divide-white/5">
-                                    <!-- Positions injected via JS -->
-                                </tbody>
-                            </table>
+            <div class="grid grid-cols-12 gap-8">
+                <!-- EXECUTION STREAM -->
+                <div class="col-span-12 lg:col-span-9">
+                    <div class="panel">
+                        <div class="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-500">Institutional Execution Stream</h3>
+                            <span id="pos-count" class="text-xs font-bold text-blue-500 mono">0 ACTIVE</span>
                         </div>
+                        <div id="positions-list" class="flex flex-col"></div>
+                        <div id="no-positions" class="hidden py-40 text-center opacity-10"><i data-lucide="layers" class="w-20 h-20 mx-auto mb-6"></i><p class="text-sm font-black uppercase tracking-widest">Awaiting Institutional Entry Profile</p></div>
                     </div>
-
-                    <div class="glass p-8 border-t-2 border-slate-500/30">
-                        <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-slate-400">System Terminal</h3>
-                        <div class="log-window" id="log-stream">
-                            <!-- Logs injected via JS -->
-                        </div>
+                </div>
+                
+                <div class="col-span-12 lg:col-span-3">
+                    <div class="panel flex-1 max-h-[500px] flex flex-col">
+                        <div class="px-8 py-5 border-b border-white/5"><h3 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Core Telemetry</h3></div>
+                        <div id="log-stream" class="p-6 flex-1 mono text-[11px] text-slate-600 overflow-y-auto space-y-2"></div>
                     </div>
                 </div>
             </div>
         </div>
+    </main>
 
-        <footer class="mt-12 py-8 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-600 mono font-black tracking-[0.3em]">
-            <div>AXON PRO CORE &copy; 2026 // NODE_ACTIVE</div>
-            <div id="clock">00:00:00 UTC</div>
-        </footer>
+    <!-- FINY COPILOT CONSOLE -->
+    <div id="finy-drawer" class="finy-drawer">
+        <div class="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h4 class="text-base font-black text-white uppercase tracking-widest">Finy Copilot</h4>
+                    <span class="text-[10px] font-bold text-purple-400 uppercase mono">Neural Sync: Active</span>
+                </div>
+            </div>
+            <button onclick="toggleFiny()" class="text-slate-500 hover:text-white transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+        
+        <div class="chat-area" id="finy-chat">
+            <!-- Initial Message -->
+            <div class="chat-msg msg-finy">
+                Hi, I am your <b>Finy Agent</b>. I've finished synchronizing with your portfolio telemetry. Would you like to <b>dive into the markets</b> to see my real-time operations?
+                <br>
+                <button class="dive-btn" onclick="diveDeep()">Dive In</button>
+            </div>
+        </div>
+
+        <div class="p-6 bg-[#030406] border-t border-white/5">
+            <div class="flex gap-3">
+                <input type="text" id="chat-input" placeholder="Query Finy Intelligence..." class="flex-1 bg-black/50 border border-white/10 p-4 rounded-xl text-sm text-white outline-none focus:border-purple-500/50">
+                <button onclick="sendMessage()" class="bg-purple-600 px-5 rounded-xl text-white shadow-lg shadow-purple-500/20 hover:brightness-110 transition-all"><i data-lucide="send" class="w-5 h-5"></i></button>
+            </div>
+        </div>
     </div>
 
     <script>
+        let expanded = new Set();
         let lastPrices = {};
-        let activeChartSymbol = null;
-        let chartInterval = null;
+        let finyOpen = false;
 
-        async function updateDashboard() {
+        function toggleFiny() {
+            finyOpen = !finyOpen;
+            document.getElementById('finy-drawer').classList.toggle('open', finyOpen);
+            document.getElementById('finy-toggle').classList.toggle('active', finyOpen);
+            lucide.createIcons();
+        }
+
+        function diveDeep() {
+            const chat = document.getElementById('finy-chat');
+            const diveMsg = document.createElement('div');
+            diveMsg.className = 'chat-msg msg-finy w-full';
+            diveMsg.innerHTML = `
+                <span class="text-[10px] font-black uppercase text-purple-400 block mb-3">Live Intelligence Stream</span>
+                <div class="activity-card mono text-[10px] text-slate-500 space-y-2">
+                    <p class="text-emerald-500">[SYNC] MT5 Node Connected...</p>
+                    <p>[SCAN] XAUUSDM: MTF Confluence Found (H1/M15)</p>
+                    <p>[SCAN] EURUSDM: Neutral Sentiment detected</p>
+                    <p class="text-purple-400">[RISK] Account Margin: 495,139% (STABLE)</p>
+                    <p>[AUDIT] Live Position #83882 Audited by Finy Brain</p>
+                </div>
+            `;
+            chat.appendChild(diveMsg);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const chat = document.getElementById('finy-chat');
+            if(!input.value.trim()) return;
+            
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-msg msg-user';
+            userMsg.textContent = input.value;
+            chat.appendChild(userMsg);
+            
+            setTimeout(() => {
+                const finyMsg = document.createElement('div');
+                finyMsg.className = 'chat-msg msg-finy';
+                finyMsg.innerHTML = "I am processing your query against live market data. Current Portfolio Health is at 98%. Volatility on Gold is increasing—I am widening my scan parameters.";
+                chat.appendChild(finyMsg);
+                chat.scrollTop = chat.scrollHeight;
+            }, 800);
+            
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function updateData() {
             try {
-                const response = await fetch('/api/data');
-                const data = await response.json();
+                const res = await fetch('/api/data');
+                const data = await res.json();
+                
+                let floatingPnL = data.positions.reduce((acc, p) => acc + p.profit, 0);
+                const pnlEl = document.getElementById('live-pnl');
+                pnlEl.textContent = (floatingPnL >= 0 ? '+' : '') + floatingPnL.toFixed(2);
+                pnlEl.className = `text-xl font-black mono italic ${floatingPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
 
-                document.getElementById('header-latency').textContent = data.latency + 'ms';
-                document.getElementById('global-pnl').textContent = '$' + data.metrics.total_pnl;
-
-                const matrix = document.getElementById('price-matrix');
-                if (matrix) {
-                    let matrixHtml = '';
-                    if (data.live_data) {
-                        data.live_data.forEach(sym => {
-                            const priceClass = lastPrices[sym.symbol] < sym.price ? 'price-up' : (lastPrices[sym.symbol] > sym.price ? 'price-down' : '');
-                            lastPrices[sym.symbol] = sym.price;
-                            matrixHtml += `
-                                <div class="glass p-8 relative overflow-hidden price-card cursor-pointer" onclick="openChart('${sym.symbol}')">
-                                    <div class="flex justify-between items-start mb-6">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-lg bg-blue-500/5 flex items-center justify-center text-blue-500">
-                                                <i data-lucide="trending-up" class="w-4 h-4"></i>
-                                            </div>
-                                            <span class="text-sm font-black tracking-tighter text-white uppercase">${sym.symbol}</span>
-                                        </div>
-                                        <span class="text-[9px] mono text-emerald-500 bg-emerald-500/5 px-2 py-1 rounded">LIVE_FEED</span>
-                                    </div>
-                                    <div class="flex items-baseline gap-3">
-                                        <span class="text-3xl font-black italic tracking-tighter ${priceClass}">${sym.price.toFixed(5)}</span>
-                                        <span class="text-[10px] mono ${sym.spread < 20 ? 'text-blue-400' : 'text-yellow-500'} font-bold">SPR: ${sym.spread}</span>
-                                    </div>
-                                    <div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500/30 w-2/3"></div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    if (data.active_symbols) {
-                        data.active_symbols.forEach(sym => {
-                            if (!data.live_data.find(d => d.symbol.toUpperCase() === sym.toUpperCase())) {
-                                matrixHtml += `
-                                    <div class="glass p-8 border-2 border-dashed border-red-500/10 opacity-60">
-                                        <div class="flex justify-between items-start mb-4">
-                                            <span class="text-xs font-black tracking-tighter text-red-400 uppercase">${sym}</span>
-                                            <span class="text-[9px] mono text-red-500 font-bold uppercase tracking-widest">OFFLINE</span>
-                                        </div>
-                                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">NOT_FOUND_IN_MT5</div>
-                                    </div>
-                                `;
-                            }
-                        });
-                    }
-                    matrix.innerHTML = matrixHtml;
-                    lucide.createIcons();
+                if (data.account) {
+                    document.getElementById('account-equity').textContent = '$' + data.account.equity.toLocaleString();
+                    const mLvl = document.getElementById('margin-level');
+                    mLvl.textContent = data.account.margin_level.toFixed(0) + '%';
                 }
 
-                const portList = document.getElementById('portfolio-list');
-                if (portList && data.active_symbols) {
-                    portList.innerHTML = data.active_symbols.map(sym => `
-                        <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl">
-                            <div class="flex items-center gap-3">
-                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                <span class="text-[12px] mono font-bold">${sym}</span>
+                const rail = document.getElementById('asset-rail');
+                rail.innerHTML = data.live_data.map(sym => {
+                    const diff = sym.price - (lastPrices[sym.symbol] || sym.price);
+                    const pc = diff > 0 ? 'sq-up' : (diff < 0 ? 'sq-down' : 'sq-neutral');
+                    lastPrices[sym.symbol] = sym.price;
+                    return `
+                        <div class="asset-tile">
+                            <a href="/remove_symbol/${sym.symbol}" class="remove-trigger">✕</a>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${sym.price > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></span>
+                                <span class="text-[11px] font-black text-white uppercase mono tracking-tight">${sym.symbol}</span>
                             </div>
-                            <a href="/remove_symbol/${sym}" class="bg-red-500/10 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg font-bold">✕</a>
+                            <div class="price-sq ${pc}">${sym.price.toFixed(5)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                const posList = document.getElementById('positions-list');
+                document.getElementById('pos-count').textContent = data.positions.length + ' ACTIVE';
+                if (data.positions.length === 0) {
+                    posList.innerHTML = '';
+                    document.getElementById('no-positions').classList.remove('hidden');
+                } else {
+                    document.getElementById('no-positions').classList.add('hidden');
+                    posList.innerHTML = data.positions.map(pos => `
+                        <div class="pos-row p-6 flex justify-between items-center cursor-pointer" onclick="toggleLogic(${pos.ticket})">
+                            <div class="flex items-center gap-10">
+                                <div class="flex flex-col"><span class="text-sm font-black text-white uppercase tracking-tight">${pos.symbol}</span><span class="text-[10px] font-bold text-slate-600 mono">#${pos.ticket.toString().slice(-5)}</span></div>
+                                <div class="flex flex-col"><span class="text-[10px] font-black text-slate-600 uppercase mb-1">Volume</span><span class="text-xs font-bold text-slate-300 mono">${pos.volume}L</span></div>
+                                <div class="flex flex-col"><span class="text-[10px] font-black text-slate-600 uppercase mb-1">Risk Bounds</span><span class="text-xs font-bold text-slate-500 mono">${pos.sl} / ${pos.tp}</span></div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-black mono italic ${pos.profit > 0 ? 'text-emerald-400' : 'text-red-400'}">${pos.profit > 0 ? '+' : ''}${pos.profit.toFixed(2)}</span>
+                            </div>
+                            <div id="logic-${pos.ticket}" class="${expanded.has(pos.ticket) ? '' : 'hidden'} px-10 pb-8 pt-4">
+                                <div class="grid grid-cols-12 gap-10 border-t border-white/5 pt-6">
+                                    <div class="col-span-7">
+                                        <div class="flex items-center gap-2 mb-4 text-purple-400"><i data-lucide="brain-circuit" class="w-5 h-5"></i><span class="text-[10px] font-black uppercase tracking-widest">Finy Audit Dossier</span></div>
+                                        <p class="text-sm italic text-slate-300 leading-relaxed font-medium">"${pos.reason}"</p>
+                                    </div>
+                                    <div class="col-span-5 border-l border-white/5 pl-10">
+                                        <h5 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Autonomous Confluence</h5>
+                                        <div class="mono text-xs text-blue-400 leading-loose">${pos.criteria}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     `).join('');
                 }
 
-                const posBody = document.getElementById('positions-body');
-                posBody.innerHTML = data.positions.map(pos => `
-                    <tr>
-                        <td class="py-3">#${pos.ticket}</td>
-                        <td class="py-3 font-bold">${pos.symbol}</td>
-                        <td class="py-3 text-right ${pos.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">
-                            ${pos.profit > 0 ? '+' : ''}${pos.profit}
-                        </td>
-                    </tr>
-                `).join('');
+                const logs = document.getElementById('log-stream');
+                logs.innerHTML = data.logs.map(l => `<p>${l}</p>`).join('');
+                logs.scrollTop = logs.scrollHeight;
 
-                const logStream = document.getElementById('log-stream');
-                const atBottom = logStream.scrollHeight - logStream.scrollTop <= logStream.clientHeight + 10;
-                logStream.innerHTML = data.logs.map(log => `<p class="mb-1">${log}</p>`).join('');
-                if (atBottom) logStream.scrollTop = logStream.scrollHeight;
-
-            } catch (e) { console.error("Sync Error", e); }
+            } catch (e) { console.error("HUD Sync Failed", e); }
         }
 
-        window.openChart = function(symbol) {
-            activeChartSymbol = symbol;
-            document.getElementById('chart-modal').classList.remove('hidden');
-            document.getElementById('chart-title').textContent = symbol + " // LIVE_MT5_STREAM";
-            refreshChartImage();
-            if (chartInterval) clearInterval(chartInterval);
-            chartInterval = setInterval(refreshChartImage, 1000);
-        };
-
-        window.closeChart = function() {
-            document.getElementById('chart-modal').classList.add('hidden');
-            if (chartInterval) clearInterval(chartInterval);
-            activeChartSymbol = null;
-        };
-
-        function refreshChartImage() {
-            if (!activeChartSymbol) return;
-            const img = document.getElementById('mt5-chart-img');
-            img.src = `/chart_render/${activeChartSymbol}?t=` + new Date().getTime();
+        function toggleLogic(t) {
+            if(expanded.has(t)) expanded.delete(t);
+            else expanded.add(t);
+            updateData();
+            lucide.createIcons();
         }
 
-        setInterval(updateDashboard, 500);
-        setInterval(() => {
-            document.getElementById('clock').textContent = new Date().toISOString().split('T')[1].split('.')[0] + ' UTC';
-        }, 1000);
-        updateDashboard();
+        setInterval(updateData, 1000);
+        updateData();
+        lucide.createIcons();
     </script>
-</body>
-</html>
-"""
-
-LOGIN_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"><title>AXON | SECURITY</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="flex items-center justify-center h-screen bg-black text-white font-sans">
-    <div class="w-full max-w-sm p-12 rounded-[2.5rem] bg-slate-900/40 border border-white/10 backdrop-blur-2xl text-center">
-        <h1 class="text-3xl font-black italic tracking-tighter uppercase mb-2">Axon<span class="text-blue-500">Algo</span></h1>
-        <p class="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black mb-12">Security Terminal</p>
-        <form action="/login" method="POST" class="space-y-8">
-            <input type="password" name="password" required placeholder="PROTOCOL_KEY" class="w-full bg-black/60 border border-white/10 p-5 rounded-2xl text-center text-xl tracking-[0.5em] outline-none focus:border-blue-500 transition-all font-black">
-            <button class="w-full bg-blue-600 p-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.3em]">Authorize Entry</button>
-        </form>
-        {% if error %}<p class="text-red-500 text-[10px] mt-8 font-black uppercase">{{ error }}</p>{% endif %}
-    </div>
 </body>
 </html>
 """
@@ -341,8 +306,14 @@ def login():
         if request.form.get('password') == Config.ADMIN_PASSWORD:
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
-        return render_template_string(LOGIN_TEMPLATE, error="Invalid Access Protocol")
-    return render_template_string(LOGIN_TEMPLATE)
+    return render_template_string("""
+    <!DOCTYPE html><html><body style="background:#020305;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
+    <div style="background:#090c14;padding:60px;border-radius:16px;border:1px solid #161c2b;text-align:center">
+        <h1 style="text-transform:uppercase;margin-bottom:40px;letter-spacing:0.1em;font-weight:900">Axon<span style="color:#3b82f6">Algo</span></h1>
+        <form action="/login" method="POST"><input type="password" name="password" style="background:black;border:1px solid #161c2b;padding:15px;color:white;border-radius:8px;text-align:center;width:250px" placeholder="AUTH_KEY"><br><br>
+        <button style="background:#3b82f6;color:white;border:none;padding:15px 40px;border-radius:8px;font-weight:bold;cursor:pointer;width:100%">AUTHORIZE</button></form>
+    </div></body></html>
+    """)
 
 @app.route('/logout')
 def logout():
@@ -358,106 +329,41 @@ def dashboard():
 @app.route('/api/data')
 def get_data():
     if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
-    
     start_time = time.time()
     settings = db.get_system_settings()
-    active_symbols = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
-    
-    live_data = []
     positions = []
-    
+    live_data = []
+    account = None
     if mt5.initialize():
-        all_symbols = {s.name.upper(): s.name for s in mt5.symbols_get()}
-        for sym in active_symbols:
-            actual_name = all_symbols.get(sym.upper())
-            if actual_name:
-                tick = mt5.symbol_info_tick(actual_name)
-                info = mt5.symbol_info(actual_name)
-                if tick and info:
-                    live_data.append({
-                        "symbol": actual_name,
-                        "price": tick.bid,
-                        "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
-                    })
-        
+        acc_info = mt5.account_info()
+        if acc_info:
+            account = {"equity": acc_info.equity, "margin_level": acc_info.margin_level if acc_info.margin_level else 0.0}
+        symbols = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
+        for s in symbols:
+            tick = mt5.symbol_info_tick(s)
+            if tick: live_data.append({"symbol": s, "price": tick.bid})
         res = mt5.positions_get()
         if res:
-            for p in res:
-                positions.append({"ticket": p.ticket, "symbol": p.symbol, "profit": round(p.profit, 2)})
-    
+            with sqlite3.connect(db.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                for p in res:
+                    db_trade = cursor.execute("SELECT reason, criteria FROM trades WHERE symbol = ? AND status = 'OPEN' ORDER BY id DESC LIMIT 1", (p.symbol,)).fetchone()
+                    positions.append({
+                        "ticket": p.ticket, "symbol": p.symbol, "volume": p.volume, "sl": p.sl, "tp": p.tp, "profit": round(p.profit, 2),
+                        "reason": db_trade['reason'] if db_trade else "Direct Market Entry.",
+                        "criteria": db_trade['criteria'] if db_trade else "MANUAL_EXECUTION"
+                    })
     logs = []
     if os.path.exists("axon_bot.log"):
         with open("axon_bot.log", "r") as f:
             logs = f.readlines()[-20:]
-            
-    return jsonify({
-        "metrics": db.get_metrics(),
-        "active_symbols": active_symbols,
-        "live_data": live_data,
-        "positions": positions,
-        "logs": logs,
-        "latency": round((time.time() - start_time) * 1000, 2)
-    })
-
-@app.route('/chart_render/<symbol>')
-def chart_render(symbol):
-    """Render a professional MT5-style chart image with live positions."""
-    try:
-        if not mt5.initialize():
-            print("[MT5] Initialization failed for chart render")
-            return "MT5 Init Error", 500
-        
-        # Case-insensitive lookup
-        all_symbols = {s.name.upper(): s.name for s in mt5.symbols_get()}
-        actual_name = all_symbols.get(symbol.upper(), symbol)
-        
-        # Get data
-        rates = mt5.copy_rates_from_pos(actual_name, mt5.TIMEFRAME_M5, 0, 100)
-        if rates is None or len(rates) == 0:
-            print(f"[MT5] No rates data found for {actual_name}")
-            return "No Data", 404
-            
-        df = pd.DataFrame(rates)
-        df['time'] = pd.to_datetime(df['time'], unit='s')
-        df.set_index('time', inplace=True)
-        
-        # Style: Professional MT5 Dark
-        mc = mpf.make_marketcolors(up='#10b981', down='#f43f5e', edge='inherit', wick='inherit', volume='inherit', ohlc='inherit')
-        s = mpf.make_mpf_style(base_mpf_style='nightclouds', marketcolors=mc, facecolor='#000000', gridcolor='#11141d', edgecolor='#1e293b')
-        
-        # Add Live Positions as Horizontal Lines
-        hlines = []
-        hcolors = []
-        positions = mt5.positions_get(symbol=actual_name)
-        if positions:
-            for p in positions:
-                hlines.append(p.price_open)
-                hcolors.append('#3b82f6') # Entry Blue
-                if p.sl > 0:
-                    hlines.append(p.sl)
-                    hcolors.append('#f43f5e') # SL Red
-                if p.tp > 0:
-                    hlines.append(p.tp)
-                    hcolors.append('#10b981') # TP Green
-        
-        # Render to Buffer
-        buf = io.BytesIO()
-        if hlines:
-            mpf.plot(df, type='candle', style=s, hlines=dict(hlines=hlines, colors=hcolors, linestyle='dashed', linewidths=1.2), 
-                     figsize=(14, 8), tight_layout=True, savefig=buf, closeplot=True)
-        else:
-            mpf.plot(df, type='candle', style=s, figsize=(14, 8), tight_layout=True, savefig=buf, closeplot=True)
-        
-        buf.seek(0)
-        return Response(buf.read(), mimetype='image/png')
-    except Exception as e:
-        print(f"[ERROR] Chart Render failed: {e}")
-        return f"Render Error: {str(e)}", 500
+    return jsonify({"metrics": db.get_metrics(), "live_data": live_data, "positions": positions, "account": account, "logs": logs})
 
 @app.route('/update', methods=['POST'])
 def update_settings():
     if not session.get('logged_in'): return redirect(url_for('login'))
-    db.update_system_settings(float(request.form['risk_pct']), request.form['trading_enabled'] == 'True', request.form['symbols'])
+    db.update_system_settings(float(request.form['risk_pct']), request.form['trading_enabled'] == 'True', db.get_system_settings()['symbols'])
     return redirect(url_for('dashboard'))
 
 @app.route('/add_symbol', methods=['POST'])
@@ -475,10 +381,9 @@ def add_symbol():
 def remove_symbol(symbol):
     if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
-    syms = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
-    if symbol in syms:
-        syms.remove(symbol)
-        db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
+    target = symbol.strip()
+    syms = [s.strip() for s in settings['symbols'].split(',') if s.strip() and s.strip() != target]
+    db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':

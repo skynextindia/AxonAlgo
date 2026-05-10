@@ -26,7 +26,9 @@ class TradingDatabase:
                         tp REAL,
                         status TEXT DEFAULT 'OPEN',
                         exit_price REAL,
-                        pnl REAL DEFAULT 0.0
+                        pnl REAL DEFAULT 0.0,
+                        reason TEXT,
+                        criteria TEXT
                     )
                 """)
                 # System settings table
@@ -56,15 +58,15 @@ class TradingDatabase:
             conn.execute("UPDATE settings SET risk_pct = ?, trading_enabled = ?, symbols = ? WHERE id = 1",
                         (risk, 1 if enabled else 0, symbols))
 
-    def log_trade(self, symbol, trade_type, lots, entry, sl, tp):
-        """Records a new open trade."""
+    def log_trade(self, symbol, trade_type, lots, entry, sl, tp, reason="", criteria=""):
+        """Records a new open trade with execution logic."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO trades (symbol, type, lots, entry_price, sl, tp)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (symbol, trade_type, lots, entry, sl, tp))
+                    INSERT INTO trades (symbol, type, lots, entry_price, sl, tp, reason, criteria)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (symbol, trade_type, lots, entry, sl, tp, reason, criteria))
                 conn.commit()
                 return cursor.lastrowid
         except Exception as e:

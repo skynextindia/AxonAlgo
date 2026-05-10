@@ -7,8 +7,8 @@ db = TradingDatabase()
 
 class TradeExecutor:
     @staticmethod
-    def open_position(symbol, signal_type, lots, sl, tp):
-        """Sends an execution request to MT5 with error handling."""
+    def open_position(symbol, signal_type, lots, sl, tp, reason="", criteria=""):
+        """Sends an execution request to MT5 with execution reasoning."""
         try:
             order_type = mt5.ORDER_TYPE_BUY if signal_type == "BULLISH_BREAKOUT" else mt5.ORDER_TYPE_SELL
             tick = mt5.symbol_info_tick(symbol)
@@ -27,7 +27,7 @@ class TradeExecutor:
                 "sl": float(sl),
                 "tp": float(tp),
                 "magic": 123456,
-                "comment": "Axon Breakout Bot",
+                "comment": "Axon Algo",
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_IOC,
             }
@@ -40,8 +40,8 @@ class TradeExecutor:
             
             logger.info(f"ORDER SUCCESS: {signal_type} @ {result.price} | Lots: {lots}")
             
-            # Record to Local Database
-            db.log_trade(symbol, signal_type, lots, result.price, sl, tp)
+            # Record to Local Database with Intelligence
+            db.log_trade(symbol, signal_type, lots, result.price, sl, tp, reason, criteria)
             
             return True
         except Exception as e:

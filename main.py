@@ -45,9 +45,10 @@ def main():
 
     try:
         while True:
-            # DYNAMIC SYNC: Refresh settings from Database
+            # DYNAMIC SYNC: Refresh and Sanitize settings from Database
             sys_settings = db.get_system_settings()
-            Config.SYMBOLS = [s.strip() for s in sys_settings['symbols'].split(',') if s.strip()]
+            raw_symbols = sys_settings['symbols'].split(',')
+            Config.SYMBOLS = [s.strip() for s in raw_symbols if s.strip()]
             Config.RISK_PER_TRADE = sys_settings['risk_pct'] / 100
             Config.TRADING_ENABLED = bool(sys_settings['trading_enabled'])
 
@@ -104,9 +105,14 @@ def main():
                             trade_params = risk.calculate_trade_params(account_info.balance, symbol_info, signal, zones)
                             
                             if trade_params['valid'] and Config.TRADING_ENABLED:
+                                # Construct Institutional Grade Reasoning
+                                exec_reason = f"{signal['type'].replace('_', ' ')} confirmed by HTF Trend Alignment."
+                                exec_criteria = f"Breakout Level: {signal['level']} | Trend: {'UP' if trend_ok else 'DOWN'} | RR: {trade_params['rr']}"
+                                
                                 success = TradeExecutor.open_position(
                                     symbol, signal['type'], trade_params['lots'], 
-                                    trade_params['sl'], trade_params['tp']
+                                    trade_params['sl'], trade_params['tp'],
+                                    reason=exec_reason, criteria=exec_criteria
                                 )
                                 if success:
                                     notifier.send_trade_alert(signal['type'], symbol, trade_params['lots'], trade_params['sl'], trade_params['tp'], trade_params['rr'])
