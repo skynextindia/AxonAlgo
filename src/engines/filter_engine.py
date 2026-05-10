@@ -1,4 +1,4 @@
-import datetime as dt
+import datetime
 import pytz
 from src.config import Config
 from src.engines.news_engine import NewsEngine
@@ -25,8 +25,9 @@ class FilterEngine:
         is_crypto = any(k in symbol_info.name for k in crypto_keywords)
         
         if not is_crypto:
-            current_hour_utc = dt.datetime.now(pytz.utc).hour
-            current_day = dt.datetime.now(pytz.utc).weekday() # 0=Mon, 6=Sun
+            now = datetime.datetime.now(pytz.utc)
+            current_hour_utc = now.hour
+            current_day = now.weekday() # 0=Mon, 6=Sun
             
             # Weekend Block for Forex/Gold
             if current_day >= 5:

@@ -6,4 +6,5 @@ __pycache__/
 demo_sr.py
 axon_bot.log
 trading_bot.db
+axon_trading.db
 *.png

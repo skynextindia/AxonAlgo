@@ -10,7 +10,7 @@ class TradeExecutor:
     def open_position(symbol, signal_type, lots, sl, tp, reason="", criteria=""):
         """Sends an execution request to MT5 with execution reasoning."""
         try:
-            order_type = mt5.ORDER_TYPE_BUY if signal_type == "BULLISH_BREAKOUT" else mt5.ORDER_TYPE_SELL
+            order_type = mt5.ORDER_TYPE_BUY if signal_type in ["BULLISH_BREAKOUT", "BUY"] else mt5.ORDER_TYPE_SELL
             tick = mt5.symbol_info_tick(symbol)
             if tick is None:
                 logger.error(f"Could not get tick info for {symbol}")
@@ -27,7 +27,7 @@ class TradeExecutor:
                 "sl": float(sl),
                 "tp": float(tp),
                 "magic": 123456,
-                "comment": "Axon Algo",
+                "comment": "Axon Intelligence",
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_IOC,
             }

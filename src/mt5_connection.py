@@ -19,6 +19,22 @@ class MT5Client:
             return False
 
     @staticmethod
+    def resolve_symbol(symbol):
+        """Finds the EXACT broker symbol name (e.g., BTCUSDm) regardless of user input case."""
+        syms = mt5.symbols_get()
+        if syms is None: return symbol
+        target = symbol.lower()
+        for s in syms:
+            s_name = s.name.lower()
+            if s_name == target:
+                return s.name
+            if s_name == target + 'm':
+                return s.name
+            if target.endswith('m') and s_name == target[:-1]:
+                return s.name
+        return symbol
+
+    @staticmethod
     def get_market_data(symbol, timeframe, count=500):
         try:
             rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, count)

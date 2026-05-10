@@ -40,6 +40,20 @@ class TradingDatabase:
                         symbols TEXT
                     )
                 """)
+                # --- SHADOW OBSERVATIONS ---
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS observations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        symbol TEXT,
+                        direction TEXT,
+                        entry_price REAL,
+                        finy_score REAL,
+                        status TEXT DEFAULT 'PENDING',
+                        outcome TEXT,
+                        reason TEXT
+                    )
+                """)
                 # Initialize default settings if empty
                 cursor.execute("SELECT count(*) FROM settings")
                 if cursor.fetchone()[0] == 0:

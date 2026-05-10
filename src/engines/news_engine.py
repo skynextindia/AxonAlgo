@@ -1,5 +1,5 @@
 import MetaTrader5 as mt5
-import datetime as dt
+import datetime
 import logging
 import pytz
 
@@ -21,7 +21,7 @@ class NewsEngine:
             currencies = self._get_symbol_currencies(symbol)
             
             # 2. Define Time Range (Current Day)
-            now_utc = dt.datetime.now(pytz.utc)
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
             start_of_day = now_utc.replace(hour=0, minute=0, second=0)
             end_of_day = now_utc.replace(hour=23, minute=59, second=59)
             
@@ -40,13 +40,13 @@ class NewsEngine:
         except Exception as e:
             logger.error(f"Failed to fetch calendar: {e}")
             return []
-
+ 
     def is_volatile_now(self, symbol):
         """
         Checks if we are currently in a 'No-Trade' news window.
         """
         try:
-            now_utc = dt.datetime.now(pytz.utc).timestamp()
+            now_utc = datetime.datetime.now(datetime.timezone.utc).timestamp()
             events = self.get_upcoming_events(symbol)
             
             for event in events:
