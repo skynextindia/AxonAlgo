@@ -19,3 +19,5 @@ class Config:
     SESSION_START = int(os.getenv("SESSION_START", 8)) 
     SESSION_END = int(os.getenv("SESSION_END", 21))
     TRAILING_STOP_PIPS = float(os.getenv("TRAILING_STOP_PIPS", 20))
+    HTF_TIMEFRAME = mt5.TIMEFRAME_H4
+    TREND_EMA = 200

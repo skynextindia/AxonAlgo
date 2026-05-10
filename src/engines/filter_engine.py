@@ -24,3 +24,26 @@ class FilterEngine:
             return False, f"Off-Session (UTC Hour: {current_hour_utc})"
 
         return True, "Conditions Optimal"
+
+    @staticmethod
+    def check_trend_confirmation(htf_df, signal_type):
+        """
+        Validates the signal against the Higher Timeframe (H4) trend.
+        Uses the 200 EMA as the institutional trend baseline.
+        """
+        if len(htf_df) < Config.TREND_EMA:
+            return True # Not enough data, skip check
+
+        # Calculate 200 EMA
+        ema = htf_df['close'].ewm(span=Config.TREND_EMA, adjust=False).mean().iloc[-1]
+        current_price = htf_df['close'].iloc[-1]
+        
+        is_bullish = current_price > ema
+        
+        if signal_type == "BULLISH_BREAKOUT" and not is_bullish:
+            return False, "Against H4 Downtrend (Price < 200 EMA)"
+        
+        if signal_type == "BEARISH_BREAKOUT" and is_bullish:
+            return False, "Against H4 Uptrend (Price > 200 EMA)"
+            
+        return True, "Trend Aligned"

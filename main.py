@@ -44,11 +44,20 @@ def main():
                 signal = breakout.check_breakout(df, zones)
                 current_price = df.iloc[-1]['close']
                 
+                # 5. PRO FEATURE: MTF Trend Confirmation (H4)
+                htf_df = MT5Client.get_market_data(Config.SYMBOL, Config.HTF_TIMEFRAME, count=300)
+                trend_ok = True
+                trend_reason = ""
+                
                 print(f"\n[{Config.SYMBOL}] Price: {current_price} | Session: {'OPEN' if is_safe else 'CLOSED'} | Safe: {is_safe}")
                 
                 if signal:
+                    trend_ok, trend_reason = FilterEngine.check_trend_confirmation(htf_df, signal['type'])
+                    
                     if not is_safe:
                         print(f"!!! SIGNAL BLOCKED: {reason}")
+                    elif not trend_ok:
+                        print(f"!!! SIGNAL BLOCKED: {trend_reason}")
                     else:
                         # Calculate Risk Parameters
                         trade_params = risk.calculate_trade_params(account_info.balance, symbol_info, signal, zones)
