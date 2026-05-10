@@ -256,7 +256,8 @@ def dashboard():
         
     metrics = db.get_metrics()
     settings = db.get_system_settings()
-    active_symbols = settings['symbols'].split(',')
+    # FORCE CLEAN: Ensure no spaces or case mismatches
+    active_symbols = [s.strip().upper() for s in settings['symbols'].split(',') if s.strip()]
     
     # Live Data Matrix & Ping
     live_data = []
