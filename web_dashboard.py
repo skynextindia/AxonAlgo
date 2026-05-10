@@ -3,6 +3,7 @@ from src.config import Config
 from src.database import TradingDatabase
 import MetaTrader5 as mt5
 import os
+import time
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -20,14 +21,16 @@ HTML_TEMPLATE = """
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #010409; --panel: rgba(13, 17, 23, 0.8); --border: rgba(255, 255, 255, 0.05); }
-        body { background-color: var(--bg); color: #c9d1d9; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: #c9d1d9; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .glass { background: var(--panel); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 1rem; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .neon-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
-        .log-window { background: #000; border: 1px solid #161b22; height: 200px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1rem; color: #8b949e; }
-        .btn-action { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.2); }
-    </style>
+        .log-window { background: #000; border: 1px solid #161b22; height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1rem; color: #8b949e; }
+        .price-up { color: #10b981; animation: pulse-up 0.5s ease-out; }
+        .price-down { color: #ef4444; animation: pulse-down 0.5s ease-out; }
+        @keyframes pulse-up { from { background: rgba(16, 185, 129, 0.1); } to { background: transparent; } }
+        @keyframes pulse-down { from { background: rgba(239, 68, 68, 0.1); } to { background: transparent; } }
+    </script>
 </head>
 <body class="p-6 md:p-12">
     <div class="max-w-[1600px] mx-auto">
@@ -36,177 +39,181 @@ HTML_TEMPLATE = """
             <div class="flex items-center gap-5">
                 <div class="w-14 h-14 bg-gradient-to-tr from-blue-700 to-indigo-800 rounded-2xl flex items-center justify-center font-black text-3xl italic shadow-2xl shadow-blue-500/20">A</div>
                 <div>
-                    <h1 class="text-3xl font-black tracking-tighter uppercase italic leading-none mb-2">AxonAlgo <span class="text-blue-500">NextGen</span></h1>
+                    <h1 class="text-3xl font-black tracking-tighter uppercase italic leading-none mb-2">AxonAlgo <span class="text-blue-500 text-lg not-italic opacity-50 ml-2">PRO_CORE</span></h1>
                     <div class="flex items-center gap-3 text-[10px] mono font-bold text-slate-500 uppercase tracking-widest">
                         <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        Neural Core Connected
+                        Neural Connection: <span id="header-latency" class="text-emerald-400">0ms</span>
                     </div>
                 </div>
             </div>
             <div class="flex items-center gap-8">
-                <div class="hidden md:flex items-center gap-3 text-[10px] mono font-bold">
-                    <span class="w-2 h-2 {{ 'bg-emerald-500' if latency < 100 else 'text-red-500' }} rounded-full status-pulse"></span>
-                    <span class="text-slate-500 uppercase">Latency:</span> <span class="{{ 'text-emerald-400' if latency < 100 else 'text-red-400' }}">{{ latency }}ms</span>
+                <div class="glass px-6 py-3 flex flex-col justify-center">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Global Account PNL</span>
+                    <span id="global-pnl" class="text-xl font-black text-emerald-400 italic font-mono">$0.00</span>
                 </div>
-                <a href="/logout" class="bg-white/5 hover:bg-red-500/10 border border-white/10 px-5 py-2 rounded-full text-[10px] uppercase font-black tracking-widest transition-all">Terminate Session</a>
+                <a href="/logout" class="bg-white/5 hover:bg-red-500/10 border border-white/10 px-6 py-3 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all">Terminate Session</a>
             </div>
         </header>
 
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <!-- LEFT: CONTROLS -->
             <div class="xl:col-span-1 space-y-8">
-                <div class="glass p-8 neon-glow">
-                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-500">Core Parameters</h3>
+                <div class="glass p-8 neon-glow border-t-2 border-blue-600">
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-500">Execution Parameters</h3>
                     <form action="/update" method="POST" class="space-y-6">
                         <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Trading State</label>
-                            <select name="trading_enabled" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold text-xs">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">System State</label>
+                            <select name="trading_enabled" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold text-xs outline-none focus:border-blue-500 transition-all">
                                 <option value="True" {{ 'selected' if settings.trading_enabled }}>AUTH_EXECUTE_LIVE</option>
                                 <option value="False" {{ 'selected' if not settings.trading_enabled }}>AUTH_READ_ONLY</option>
                             </select>
                         </div>
                         <div>
                             <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Risk Exposure (%)</label>
-                            <input type="number" step="0.1" name="risk_pct" value="{{ settings.risk_pct }}" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold">
+                            <input type="number" step="0.1" name="risk_pct" value="{{ settings.risk_pct }}" class="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-bold outline-none focus:border-blue-500 transition-all">
                         </div>
                         <input type="hidden" name="symbols" value="{{ settings.symbols }}">
-                        <button type="submit" class="w-full bg-blue-600 p-4 rounded-xl font-black text-xs uppercase tracking-widest btn-action shadow-xl shadow-blue-500/20">Sync Global State</button>
+                        <button type="submit" class="w-full bg-blue-600 p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-blue-500/20">Sync Global State</button>
                     </form>
                 </div>
 
-                <div class="glass p-8 border-t-2 border-t-blue-600/30">
-                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-400">Institutional Portfolio</h3>
-                    <div class="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2">
-                        {% for sym in active_symbols %}
-                        <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl hover:border-blue-500/30 transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
-                                <span class="text-[12px] mono font-bold tracking-tighter">{{ sym }}</span>
-                            </div>
-                            <a href="/remove_symbol/{{ sym }}" class="bg-red-500/10 hover:bg-red-500/20 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold">✕</a>
-                        </div>
-                        {% endfor %}
+                <div class="glass p-8 border-t-2 border-white/5">
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-slate-400">Portfolio Core</h3>
+                    <div id="portfolio-list" class="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2">
+                        <!-- Portfolios injected via JS -->
                     </div>
                     <form action="/add_symbol" method="POST" class="space-y-4">
-                        <div class="relative">
-                            <input type="text" name="symbol" placeholder="ENTER_SYMBOL (e.g. BTCUSDm)" class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none transition-all">
-                        </div>
-                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">Add to Scanning Core</button>
+                        <input type="text" name="symbol" placeholder="ADD_SYMBOL..." class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none transition-all">
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">Add to Core</button>
                     </form>
                 </div>
             </div>
 
             <!-- CENTER: LIVE MATRIX -->
             <div class="xl:col-span-3 space-y-8">
-                <!-- LIVE PRICE TILES -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {% for sym_data in live_data %}
-                    <div class="glass p-6 relative overflow-hidden border-b-2 border-b-blue-500/20">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-black tracking-tighter text-blue-400 uppercase">{{ sym_data.symbol }}</span>
-                            <span class="text-[9px] mono text-slate-600">LIVE_TICK</span>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-black italic tracking-tighter">{{ sym_data.price }}</span>
-                            <span class="text-[10px] mb-1 {{ 'text-emerald-400' if sym_data.spread < 20 else 'text-yellow-400' }}">S: {{ sym_data.spread }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    
-                    {# Warning for missing symbols #}
-                    {% for sym in active_symbols %}
-                        {% set found = False %}
-                        {% for d in live_data %}
-                            {% if d.symbol|upper == sym|upper %}
-                                {% set found = True %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if not found %}
-                        <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
-                            <div class="flex justify-between items-start mb-4">
-                                <span class="text-xs font-black tracking-tighter text-red-400 uppercase">{{ sym }}</span>
-                                <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
-                            </div>
-                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                Not found in MT5 Market Watch
-                            </div>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
+                <div id="price-matrix" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Price cards injected via JS -->
                 </div>
 
-                <!-- ORDERS & LOGS -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass p-8">
+                    <div class="glass p-8 border-t-2 border-emerald-500/30">
                         <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-emerald-400">Execution Stream</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-[10px] mono text-left">
                                 <thead class="text-slate-600 border-b border-white/5">
-                                    <tr>
-                                        <th class="pb-3 uppercase">Ticket</th>
-                                        <th class="pb-3 uppercase">Asset</th>
-                                        <th class="pb-3 uppercase">Profit</th>
-                                    </tr>
+                                    <tr><th class="pb-3 uppercase">Ticket</th><th class="pb-3 uppercase">Asset</th><th class="pb-3 uppercase text-right">Profit</th></tr>
                                 </thead>
-                                <tbody class="divide-y divide-white/5">
-                                    {% for pos in positions %}
-                                    <tr>
-                                        <td class="py-3">#{{ pos.ticket }}</td>
-                                        <td class="py-3 font-bold">{{ pos.symbol }}</td>
-                                        <td class="py-3 text-right {{ 'text-emerald-400' if pos.profit > 0 else 'text-red-400' }} font-bold">
-                                            {{ '+' if pos.profit > 0 }}{{ pos.profit }}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+                                <tbody id="positions-body" class="divide-y divide-white/5">
+                                    <!-- Positions injected via JS -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="glass p-8">
+                    <div class="glass p-8 border-t-2 border-slate-500/30">
                         <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-slate-400">System Terminal</h3>
                         <div class="log-window" id="log-stream">
-                            {% for log in logs %}
-                            <p class="mb-1">{{ log }}</p>
-                            {% endfor %}
+                            <!-- Logs injected via JS -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <footer class="mt-12 py-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-600 mono font-black tracking-[0.3em] gap-4">
-            <div>AXON ALGO NEXTGEN &copy; 2026 // NODE_ACTIVE</div>
-            <div class="flex gap-10">
-                <div class="flex items-center gap-2">
-                    <span class="text-slate-700">MT5:</span> <span class="text-blue-500">ENCRYPTED_AUTH</span>
-                </div>
-                <div id="clock">00:00:00 UTC</div>
-            </div>
+        <footer class="mt-12 py-8 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-600 mono font-black tracking-[0.3em]">
+            <div>AXON PRO CORE &copy; 2026 // NODE_ACTIVE</div>
+            <div id="clock">00:00:00 UTC</div>
         </footer>
     </div>
 
     <script>
-        let isFocused = false;
-        const symbolInput = document.querySelector('input[name="symbol"]');
-        
-        symbolInput.addEventListener('focus', () => { isFocused = true; });
-        symbolInput.addEventListener('blur', () => { isFocused = false; });
+        let lastPrices = {};
 
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+
+                // Update Header
+                document.getElementById('header-latency').textContent = data.latency + 'ms';
+                document.getElementById('global-pnl').textContent = '$' + data.metrics.total_pnl;
+
+                // Update Price Matrix
+                const matrix = document.getElementById('price-matrix');
+                let matrixHtml = '';
+                
+                // Add Live Cards
+                data.live_data.forEach(sym => {
+                    const priceClass = lastPrices[sym.symbol] < sym.price ? 'price-up' : (lastPrices[sym.symbol] > sym.price ? 'price-down' : '');
+                    lastPrices[sym.symbol] = sym.price;
+                    
+                    matrixHtml += `
+                        <div class="glass p-6 relative overflow-hidden border-b-2 border-b-blue-500/30">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-xs font-black tracking-tighter text-blue-400 uppercase">${sym.symbol}</span>
+                                <span class="text-[9px] mono text-slate-600">LIVE_DATA</span>
+                            </div>
+                            <div class="flex items-end gap-2">
+                                <span class="text-3xl font-black italic tracking-tighter ${priceClass}">${sym.price.toFixed(5)}</span>
+                                <span class="text-[10px] mb-1 ${sym.spread < 20 ? 'text-emerald-400' : 'text-yellow-400'}">S: ${sym.spread}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Add Offline Warnings
+                data.active_symbols.forEach(sym => {
+                    if (!data.live_data.find(d => d.symbol.toUpperCase() === sym.toUpperCase())) {
+                        matrixHtml += `
+                            <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="text-xs font-black tracking-tighter text-red-400 uppercase">${sym}</span>
+                                    <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
+                                </div>
+                                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">NOT_FOUND_IN_MT5</div>
+                            </div>
+                        `;
+                    }
+                });
+                matrix.innerHTML = matrixHtml;
+
+                // Update Portfolio List
+                const portList = document.getElementById('portfolio-list');
+                portList.innerHTML = data.active_symbols.map(sym => `
+                    <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl">
+                        <div class="flex items-center gap-3">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            <span class="text-[12px] mono font-bold">${sym}</span>
+                        </div>
+                        <a href="/remove_symbol/${sym}" class="bg-red-500/10 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg font-bold hover:bg-red-500/20 transition-all">✕</a>
+                    </div>
+                `).join('');
+
+                // Update Positions
+                const posBody = document.getElementById('positions-body');
+                posBody.innerHTML = data.positions.map(pos => `
+                    <tr>
+                        <td class="py-3">#${pos.ticket}</td>
+                        <td class="py-3 font-bold">${pos.symbol}</td>
+                        <td class="py-3 text-right ${pos.profit > 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">
+                            ${pos.profit > 0 ? '+' : ''}${pos.profit}
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Update Logs
+                const logStream = document.getElementById('log-stream');
+                const atBottom = logStream.scrollHeight - logStream.scrollTop <= logStream.clientHeight + 10;
+                logStream.innerHTML = data.logs.map(log => `<p class="mb-1">${log}</p>`).join('');
+                if (atBottom) logStream.scrollTop = logStream.scrollHeight;
+
+            } catch (e) { console.error("Sync Error", e); }
+        }
+
+        setInterval(updateDashboard, 500); // 500ms ultra-fast sync
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toISOString().split('T')[1].split('.')[0] + ' UTC';
+            document.getElementById('clock').textContent = new Date().toISOString().split('T')[1].split('.')[0] + ' UTC';
         }, 1000);
-        
-        // Auto-refresh data every 5 seconds, ONLY if not typing
-        setInterval(() => { 
-            if (!isFocused) {
-                location.reload(); 
-            }
-        }, 5000);
-        
-        const logWindow = document.getElementById('log-stream');
-        if(logWindow) logWindow.scrollTop = logWindow.scrollHeight;
     </script>
 </body>
 </html>
@@ -218,22 +225,16 @@ LOGIN_TEMPLATE = """
 <head>
     <meta charset="UTF-8"><title>AXON | SECURITY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { background: #010409; color: white; -webkit-font-smoothing: antialiased; }</style>
 </head>
-<body class="flex items-center justify-center h-screen bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black">
-    <div class="w-full max-w-sm p-12 rounded-[2.5rem] bg-slate-900/40 border border-white/10 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-        <div class="mb-12 text-center">
-            <h1 class="text-3xl font-black italic tracking-tighter uppercase mb-2">Axon<span class="text-blue-500">Algo</span></h1>
-            <p class="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black">Secure Terminal Access</p>
-        </div>
+<body class="flex items-center justify-center h-screen bg-black text-white font-sans">
+    <div class="w-full max-w-sm p-12 rounded-[2.5rem] bg-slate-900/40 border border-white/10 backdrop-blur-2xl text-center">
+        <h1 class="text-3xl font-black italic tracking-tighter uppercase mb-2">Axon<span class="text-blue-500">Algo</span></h1>
+        <p class="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black mb-12">Security Terminal</p>
         <form action="/login" method="POST" class="space-y-8">
-            <div class="relative group">
-                <input type="password" name="password" required placeholder="PROTOCOL_KEY" class="w-full bg-black/60 border border-white/10 p-5 rounded-2xl text-center text-xl tracking-[0.5em] outline-none focus:border-blue-600 focus:ring-4 ring-blue-600/10 transition-all font-black">
-            </div>
-            <button class="w-full bg-blue-600 hover:bg-blue-500 p-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/20 active:scale-95 transition-all">Authorize Entry</button>
+            <input type="password" name="password" required placeholder="PROTOCOL_KEY" class="w-full bg-black/60 border border-white/10 p-5 rounded-2xl text-center text-xl tracking-[0.5em] outline-none focus:border-blue-500 transition-all font-black">
+            <button class="w-full bg-blue-600 p-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.3em]">Authorize Entry</button>
         </form>
-        {% if error %}<p class="text-red-500 text-[10px] mt-8 text-center font-black uppercase tracking-[0.2em]">{{ error }}</p>{% endif %}
+        {% if error %}<p class="text-red-500 text-[10px] mt-8 font-black uppercase">{{ error }}</p>{% endif %}
     </div>
 </body>
 </html>
@@ -255,30 +256,25 @@ def logout():
 
 @app.route('/')
 def dashboard():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-        
-    metrics = db.get_metrics()
+    if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
-    # FORCE CLEAN: Ensure no spaces
-    active_symbols = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
-    
-    # Live Data Matrix & Ping
-    live_data = []
-    positions = []
-    latency = 0
-    import time
+    return render_template_string(HTML_TEMPLATE, settings=settings)
+
+@app.route('/api/data')
+def get_data():
+    if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
     
     start_time = time.time()
-    # Attempt connection without force-initializing if already active
-    is_mt5_ok = mt5.initialize()
-    if is_mt5_ok:
-        # Get all available symbols from MT5 to handle case-insensitive matching
-        all_mt5_symbols = {s.name.upper(): s.name for s in mt5.symbols_get()}
-        
+    settings = db.get_system_settings()
+    active_symbols = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
+    
+    live_data = []
+    positions = []
+    
+    if mt5.initialize():
+        all_symbols = {s.name.upper(): s.name for s in mt5.symbols_get()}
         for sym in active_symbols:
-            # Find the actual case-sensitive name from MT5
-            actual_name = all_mt5_symbols.get(sym.upper())
+            actual_name = all_symbols.get(sym.upper())
             if actual_name:
                 tick = mt5.symbol_info_tick(actual_name)
                 info = mt5.symbol_info(actual_name)
@@ -289,26 +285,24 @@ def dashboard():
                         "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
                     })
         
-        latency = round((time.time() - start_time) * 1000, 2)
-        
         res = mt5.positions_get()
         if res:
             for p in res:
                 positions.append({"ticket": p.ticket, "symbol": p.symbol, "profit": round(p.profit, 2)})
-    else:
-        # If MT5 fails to initialize, try to report why
-        last_error = mt5.last_error()
-        print(f"MT5 Init Error: {last_error}")
     
-    # Read last 20 logs
     logs = []
     if os.path.exists("axon_bot.log"):
         with open("axon_bot.log", "r") as f:
             logs = f.readlines()[-20:]
             
-    return render_template_string(HTML_TEMPLATE, metrics=metrics, settings=settings, 
-                                 active_symbols=active_symbols, live_data=live_data, 
-                                 positions=positions, logs=logs, latency=latency)
+    return jsonify({
+        "metrics": db.get_metrics(),
+        "active_symbols": active_symbols,
+        "live_data": live_data,
+        "positions": positions,
+        "logs": logs,
+        "latency": round((time.time() - start_time) * 1000, 2)
+    })
 
 @app.route('/update', methods=['POST'])
 def update_settings():
@@ -331,7 +325,7 @@ def add_symbol():
 def remove_symbol(symbol):
     if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
-    syms = settings['symbols'].split(',')
+    syms = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
     if symbol in syms:
         syms.remove(symbol)
         db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
