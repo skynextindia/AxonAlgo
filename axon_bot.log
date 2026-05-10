@@ -124,3 +124,99 @@
 2026-05-11 00:56:08,241 [INFO] AxonBot: Bot stopped by user.
 2026-05-11 00:56:08,241 [INFO] AxonBot: MT5 Connection Closed.
 2026-05-11 00:56:08,439 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:56:16,556 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:56:16,558 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:56:16,559 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:56:18,682 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:56:26,560 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:56:26,561 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:56:26,562 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:56:28,996 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:56:36,563 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:56:36,564 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:56:36,564 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:56:39,253 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:56:46,565 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:56:46,566 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:56:46,567 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:56:49,521 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:56:56,568 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:56:56,569 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:56:56,570 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:56:59,784 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:06,571 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:06,572 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:06,573 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:57:10,028 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:16,574 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:16,575 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:16,576 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:57:20,276 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:26,577 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:26,578 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:26,579 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:57:30,529 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:36,580 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:36,581 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:36,581 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:57:40,820 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:46,583 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:46,584 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:46,585 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:57:51,064 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:57:56,586 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:57:56,587 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:57:56,588 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:01,316 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:06,589 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:06,590 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:06,591 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:11,559 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:16,592 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:16,593 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:16,594 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:21,793 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:22,146 [INFO] AxonBot: --- AXON TRADING BOT INITIALIZING ---
+2026-05-11 00:58:22,156 [INFO] src.mt5_connection: Connected to MT5 Server: 
+2026-05-11 00:58:22,272 [ERROR] src.engines.news_engine: Failed to fetch calendar: module 'MetaTrader5' has no attribute 'calendar_events_get'
+2026-05-11 00:58:26,595 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:26,595 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:26,596 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:30,246 [INFO] AxonBot: Bot stopped by user.
+2026-05-11 00:58:30,246 [INFO] AxonBot: MT5 Connection Closed.
+2026-05-11 00:58:32,033 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:36,597 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:36,598 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:36,598 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:42,255 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:46,599 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:46,600 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:46,600 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:58:52,489 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:58:56,601 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:58:56,602 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:58:56,603 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:59:02,727 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:59:06,603 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:59:06,604 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:59:06,605 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:59:12,954 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:59:16,606 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:59:16,606 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:59:16,607 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:59:22,702 [INFO] AxonBot: --- AXON TRADING BOT INITIALIZING ---
+2026-05-11 00:59:22,713 [INFO] src.mt5_connection: Connected to MT5 Server: 
+2026-05-11 00:59:22,841 [ERROR] src.engines.news_engine: Failed to fetch calendar: module 'MetaTrader5' has no attribute 'calendar_events_get'
+2026-05-11 00:59:23,203 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:59:26,608 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:59:26,609 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:59:26,610 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:59:33,186 [ERROR] src.engines.news_engine: Failed to fetch calendar: module 'MetaTrader5' has no attribute 'calendar_events_get'
+2026-05-11 00:59:33,444 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:59:36,611 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 00:59:36,613 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 00:59:36,613 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 00:59:43,538 [ERROR] src.engines.news_engine: Failed to fetch calendar: module 'MetaTrader5' has no attribute 'calendar_events_get'
+2026-05-11 00:59:43,677 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 00:59:45,629 [INFO] AxonBot: Bot stopped by user.
+2026-05-11 00:59:45,629 [INFO] AxonBot: MT5 Connection Closed.

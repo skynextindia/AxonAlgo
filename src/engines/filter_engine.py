@@ -25,10 +25,10 @@ class FilterEngine:
         if not (Config.SESSION_START <= current_hour_utc <= Config.SESSION_END):
             return False, f"Off-Session (UTC Hour: {current_hour_utc})"
 
-        # 3. News Filter (Protects against high-impact volatility)
-        is_volatile, event_name = FilterEngine.news_engine.is_volatile_now(symbol_info.name)
-        if is_volatile:
-            return False, f"High Impact News: {event_name}"
+        # 3. News Filter (Disabled due to library incompatibility)
+        # is_volatile, event_name = FilterEngine.news_engine.is_volatile_now(symbol_info.name)
+        # if is_volatile:
+        #     return False, f"High Impact News: {event_name}"
 
         return True, "Conditions Optimal"
 
