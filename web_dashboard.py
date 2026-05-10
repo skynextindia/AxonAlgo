@@ -256,8 +256,8 @@ def dashboard():
         
     metrics = db.get_metrics()
     settings = db.get_system_settings()
-    # FORCE CLEAN: Ensure no spaces or case mismatches
-    active_symbols = [s.strip().upper() for s in settings['symbols'].split(',') if s.strip()]
+    # FORCE CLEAN: Ensure no spaces
+    active_symbols = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
     
     # Live Data Matrix & Ping
     live_data = []
@@ -310,8 +310,8 @@ def update_settings():
 def add_symbol():
     if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
-    syms = [s.strip().upper() for s in settings['symbols'].split(',') if s.strip()]
-    new_sym = request.form['symbol'].strip().upper()
+    syms = [s.strip() for s in settings['symbols'].split(',') if s.strip()]
+    new_sym = request.form['symbol'].strip()
     if new_sym and new_sym not in syms:
         syms.append(new_sym)
         db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))

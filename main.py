@@ -47,7 +47,7 @@ def main():
         while True:
             # DYNAMIC SYNC: Refresh settings from Database
             sys_settings = db.get_system_settings()
-            Config.SYMBOLS = [s.strip().upper() for s in sys_settings['symbols'].split(',') if s.strip()]
+            Config.SYMBOLS = [s.strip() for s in sys_settings['symbols'].split(',') if s.strip()]
             Config.RISK_PER_TRADE = sys_settings['risk_pct'] / 100
             Config.TRADING_ENABLED = bool(sys_settings['trading_enabled'])
 
