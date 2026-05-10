@@ -94,6 +94,8 @@ def main():
                             with sqlite3.connect(db.db_path) as conn:
                                 conn.execute("INSERT INTO observations (symbol, direction, entry_price, finy_score, reason) VALUES (?,?,?,?,?)",
                                            (symbol, analysis['direction'], df['close'].iloc[-1], analysis['alpha'], "Insufficient Alpha Synergy"))
+                            # Finy.AI Neural Intervention logged
+                            logger.info(f"Finy.AI: Blocked {symbol} {analysis['direction']} - Insufficient Alpha Synergy")
 
                 except Exception as e:
                     import traceback

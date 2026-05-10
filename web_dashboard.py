@@ -165,7 +165,7 @@ HTML_TEMPLATE = """
                 <div class="panel">
                     <div class="panel-header"><span class="panel-title">Neural Observations (Rejected Trades)</span></div>
                     <div class="p-4">
-                        <p class="text-xs text-gray-500 mb-4">Trades blocked by Finy due to insufficient alpha or macro-conflicts.</p>
+                        <p class="text-xs text-gray-500 mb-4">Trades blocked by Finy.AI due to insufficient alpha or macro-conflicts.</p>
                         <div id="observations-list" class="space-y-2"></div>
                     </div>
                 </div>
@@ -194,11 +194,11 @@ HTML_TEMPLATE = """
         </div>
     </main>
 
-    <!-- FINY AI SIDEBAR -->
+    <!-- FINY.AI SIDEBAR -->
     <aside class="sidebar" style="width: 280px; border-right: none; border-left: 1px solid var(--border); padding: 1.5rem; justify-content: flex-start; align-items: flex-start;">
         <div class="flex items-center gap-2 mb-6 w-full border-b border-white/10 pb-4">
             <i data-lucide="brain" class="text-emerald-500"></i>
-            <span class="text-[11px] font-black text-white uppercase tracking-widest">Finy Assistant</span>
+            <span class="text-[11px] font-black text-white uppercase tracking-widest">Finy.AI Assistant</span>
             <div class="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
         </div>
         <p id="finy-thought-container" class="text-[11px] text-gray-400 italic leading-relaxed mb-6">"Monitoring live order flow and macroeconomic confluences across all node assets. Standing by."</p>
@@ -214,9 +214,9 @@ HTML_TEMPLATE = """
 
             <!-- CHAT INTERFACE -->
             <div class="border-t border-white/10 pt-4 mt-auto">
-                <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Chat with Finy</span>
+                <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Chat with Finy.AI</span>
                 <div id="chat-box" class="h-32 overflow-y-auto text-[10px] space-y-2 mb-3 mono text-gray-400">
-                    <div>Finy: System online. How can I help?</div>
+                    <div>Finy.AI: System online. How can I help?</div>
                 </div>
                 <div class="flex gap-2">
                     <input type="text" id="chat-input" placeholder="Type message..." class="flex-1 bg-black border border-white/10 p-2 text-[10px] text-white outline-none focus:border-blue-500">
@@ -337,7 +337,7 @@ HTML_TEMPLATE = """
                         <div class="border border-white/5 bg-white/[0.02] p-3 rounded mb-2">
                             <div class="flex justify-between mb-1">
                                 <span class="text-[10px] font-black uppercase text-${o.direction === 'BUY' ? 'emerald' : 'red'}-500">${o.symbol} ${o.direction}</span>
-                                <span class="text-[9px] mono text-blue-400">FINY: ${o.finy}</span>
+                                <span class="text-[9px] mono text-blue-400">FINY.AI: ${o.finy}</span>
                             </div>
                             <div class="text-[10px] text-gray-400 font-medium">REJECT: ${o.reason}</div>
                             <div class="text-[9px] text-gray-600 mono mt-1">${o.time}</div>
@@ -381,7 +381,7 @@ HTML_TEMPLATE = """
                     body: JSON.stringify({message: msg})
                 });
                 const data = await res.json();
-                box.innerHTML += `<div class="text-emerald-500">Finy: ${data.response}</div>`;
+                box.innerHTML += `<div class="text-emerald-500">Finy.AI: ${data.response}</div>`;
                 box.scrollTop = box.scrollHeight;
             } catch (e) { console.error(e); }
         }
@@ -601,7 +601,7 @@ def api_chat():
     elif "market" in msg:
         resp = "Sentiment is mixed. Volatility levels are fluctuating. Higher probability setups in indices currently."
     elif "who are you" in msg or "finy" in msg:
-        resp = "I am Finy, your Neural Trading Assistant. I monitor institutional flows and macroeconomic vectors."
+        resp = "I am Finy.AI, your Neural Trading Assistant. I monitor institutional flows and macroeconomic vectors."
     else:
         resp = "Neural engine processing query. Recommendation: Maintain strict risk management and monitor institutional strength."
         

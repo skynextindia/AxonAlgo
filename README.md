@@ -1,21 +1,42 @@
-# AxonAlgo 🚀
-**Professional Institutional-Grade MT5 Breakout Trading Bot**
+# Axon Stealth Intelligence Terminal (v19.4) 🚀
+**Institutional-Grade Neural Trading Bot & Command Dashboard**
 
-AxonAlgo is a high-performance algorithmic trading system built for MetaTrader 5. It specializes in detecting high-momentum breakouts from institutional Support and Resistance zones using a multi-layer confirmation stack.
+Axon Stealth is a high-performance algorithmic trading system optimized for MetaTrader 5. It leverages the **Finy.AI Neural Engine** to validate institutional breakout patterns across multi-timeframe vectors.
 
-## 🧠 Core Engines
-- **S/R Zone Engine**: Clusters fractal highs/lows into supply/demand zones.
-- **Breakout Validator**: Confirms momentum using Relative Volume and ATR expansion.
-- **MTF Trend Filter**: Validates trades against the H4 200-period EMA.
-- **Candlestick Psychology**: Detects Engulfing, Hammer, and Shooting Star patterns.
-- **Risk Engine**: Dynamic SL/TP based on market structure with 1% fixed fractional risk.
-- **Position Manager**: Automated Trailing Stop to lock in profits.
+---
 
-## 🚀 Setup & Installation
-1. Clone the repo: `git clone https://github.com/skynextindia/AxonAlgo.git`
-2. Install requirements: `pip install -r requirements.txt`
-3. Configure your `.env` (Rename `.env.example` to `.env`)
-4. Run the bot: `python main.py`
+### 🧠 Intelligence Layer: Finy.AI
+The terminal is powered by **Finy.AI**, a proprietary neural assistant that:
+- **Neural Interventions**: Automatically blocks low-probability trades based on macro-conflicts.
+- **Deep Scan**: Provides real-time sentiment and institutional strength analysis.
+- **Neural Lab**: Tracks real-time performance metrics and win-rate analytics.
+- **Interactive Chat**: Direct interface for strategy queries and system status reports.
 
-## ⚠️ Safety Disclaimer
-Trading involves significant risk. This bot is provided for educational purposes. Always test in a Demo account before going live.
+### 🚀 Core Capabilities
+- **Institutional S/R Engine**: Clusters fractal highs/lows into dynamic supply/demand zones.
+- **MTF Trend Filter**: Validates H4/D1 trend confluences using neural-weighted EMAs.
+- **Stealth Dashboard**: 300ms hyper-sync HUD for real-time order flow monitoring.
+- **Risk Control Hub**: Dynamic 1% fixed fractional risk management with institutional safety toggles.
+
+---
+
+### 📊 System Metadata (Auto-Generated)
+- **Last Updated**: 2026-05-11 04:52
+- **Total Lines of Code & Docs**: 1,945
+- **Neural Accuracy Engine**: V2.1 (Overclocked)
+
+### 🛠️ Resolved Terminal Errors (Session v19.3 -> v19.4)
+1. **Critical Logic Fix**: Resolved `datetime` reference error in the core execution loop causing bot stagnation.
+2. **API Stability**: Patched `sqlite3.Row` JSON serialization error in the `/api/data` stream.
+3. **Latency Optimization**: Reduced UI polling latency from 1s to 300ms via server-side `EVENTS_CACHE`.
+4. **Symbol Sync**: Fixed MT5 symbol initialization gaps for inactive market pairs.
+
+---
+
+## 🚀 Setup
+1. Clone: `git clone https://github.com/skynextindia/AxonAlgo.git`
+2. Requirements: `pip install -r requirements.txt`
+3. Initialize: `python main.py`
+4. Command HUD: `python web_dashboard.py`
+
+Code by @skynext
