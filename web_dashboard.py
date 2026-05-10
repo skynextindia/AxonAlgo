@@ -116,7 +116,11 @@ HTML_TEMPLATE = """
                     {# Warning for missing symbols #}
                     {% for sym in active_symbols %}
                         {% set found = False %}
-                        {% for d in live_data %}{% if d.symbol == sym %}{% set found = True %}{% endif %}{% endfor %}
+                        {% for d in live_data %}
+                            {% if d.symbol|upper == sym|upper %}
+                                {% set found = True %}
+                            {% endif %}
+                        {% endfor %}
                         {% if not found %}
                         <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
                             <div class="flex justify-between items-start mb-4">
@@ -124,7 +128,7 @@ HTML_TEMPLATE = """
                                 <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
                             </div>
                             <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                Missing from MT5 Market Watch
+                                Not found in MT5 Market Watch
                             </div>
                         </div>
                         {% endif %}
@@ -269,15 +273,21 @@ def dashboard():
     # Attempt connection without force-initializing if already active
     is_mt5_ok = mt5.initialize()
     if is_mt5_ok:
+        # Get all available symbols from MT5 to handle case-insensitive matching
+        all_mt5_symbols = {s.name.upper(): s.name for s in mt5.symbols_get()}
+        
         for sym in active_symbols:
-            tick = mt5.symbol_info_tick(sym)
-            info = mt5.symbol_info(sym)
-            if tick and info:
-                live_data.append({
-                    "symbol": sym,
-                    "price": tick.bid,
-                    "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
-                })
+            # Find the actual case-sensitive name from MT5
+            actual_name = all_mt5_symbols.get(sym.upper())
+            if actual_name:
+                tick = mt5.symbol_info_tick(actual_name)
+                info = mt5.symbol_info(actual_name)
+                if tick and info:
+                    live_data.append({
+                        "symbol": actual_name,
+                        "price": tick.bid,
+                        "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
+                    })
         
         latency = round((time.time() - start_time) * 1000, 2)
         
