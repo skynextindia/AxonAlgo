@@ -19,11 +19,21 @@ class FilterEngine:
         if spread_pips > Config.MAX_SPREAD_PIPS:
             return False, f"High Spread: {round(spread_pips, 1)} pips"
 
-        # 2. Session Filter (Protects against low liquidity/fakeouts)
-        # We use UTC for consistency across VPS/Local deployments
-        current_hour_utc = dt.datetime.now(pytz.utc).hour
-        if not (Config.SESSION_START <= current_hour_utc <= Config.SESSION_END):
-            return False, f"Off-Session (UTC Hour: {current_hour_utc})"
+        # 2. Session Filter (Protects against low liquidity)
+        # Bypassed for Crypto assets as they trade 24/7
+        crypto_keywords = ["BTC", "ETH", "SOL", "BNB", "XRP"]
+        is_crypto = any(k in symbol_info.name for k in crypto_keywords)
+        
+        if not is_crypto:
+            current_hour_utc = dt.datetime.now(pytz.utc).hour
+            current_day = dt.datetime.now(pytz.utc).weekday() # 0=Mon, 6=Sun
+            
+            # Weekend Block for Forex/Gold
+            if current_day >= 5:
+                return False, "Market Closed (Weekend)"
+                
+            if not (Config.SESSION_START <= current_hour_utc <= Config.SESSION_END):
+                return False, f"Off-Session (UTC Hour: {current_hour_utc})"
 
         # 3. News Filter (Disabled due to library incompatibility)
         # is_volatile, event_name = FilterEngine.news_engine.is_volatile_now(symbol_info.name)
