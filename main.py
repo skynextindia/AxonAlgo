@@ -5,6 +5,7 @@ from src.engines.sr_engine import SREngine
 from src.engines.breakout_engine import BreakoutEngine
 from src.engines.risk_engine import RiskEngine
 from src.engines.filter_engine import FilterEngine
+from src.engines.candle_engine import CandleEngine
 from src.executor import TradeExecutor
 import MetaTrader5 as mt5
 from tabulate import tabulate
@@ -59,8 +60,12 @@ def main():
                     elif not trend_ok:
                         print(f"!!! SIGNAL BLOCKED: {trend_reason}")
                     else:
-                        # Calculate Risk Parameters
-                        trade_params = risk.calculate_trade_params(account_info.balance, symbol_info, signal, zones)
+                        # 6. PRO FEATURE: Candle Confirmation
+                        if not CandleEngine.is_confirmed(df, signal['type']):
+                            print(f"!!! SIGNAL BLOCKED: No Candle Confirmation (Waiting for Engulfing/Hammer)")
+                        else:
+                            # Calculate Risk Parameters
+                            trade_params = risk.calculate_trade_params(account_info.balance, symbol_info, signal, zones)
                         
                         if trade_params['valid']:
                             print(f"!!! TRADE SIGNAL VALIDATED !!!")
