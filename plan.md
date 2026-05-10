@@ -62,4 +62,4 @@ AxonAlgo is a modular, high-frequency execution engine designed for MetaTrader 5
 - [ ] **Automated Backtesting**: A one-click suite to optimize settings for new assets.
 
 ---
-*Created by Antigravity for Axon Algo Technologies*
+*Created by @Rohan for Axon Algo Technologies*
