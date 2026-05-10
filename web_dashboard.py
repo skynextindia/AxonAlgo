@@ -166,16 +166,26 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        let isFocused = false;
+        const symbolInput = document.querySelector('input[name="symbol"]');
+        
+        symbolInput.addEventListener('focus', () => { isFocused = true; });
+        symbolInput.addEventListener('blur', () => { isFocused = false; });
+
         setInterval(() => {
             const now = new Date();
             document.getElementById('clock').textContent = now.toISOString().split('T')[1].split('.')[0] + ' UTC';
         }, 1000);
         
-        // Auto-refresh data every 5 seconds
-        setTimeout(() => { location.reload(); }, 5000);
+        // Auto-refresh data every 5 seconds, ONLY if not typing
+        setInterval(() => { 
+            if (!isFocused) {
+                location.reload(); 
+            }
+        }, 5000);
         
         const logWindow = document.getElementById('log-stream');
-        logWindow.scrollTop = logWindow.scrollHeight;
+        if(logWindow) logWindow.scrollTop = logWindow.scrollHeight;
     </script>
 </body>
 </html>
