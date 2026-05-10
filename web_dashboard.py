@@ -232,11 +232,12 @@ def dashboard():
     if mt5.initialize():
         for sym in active_symbols:
             tick = mt5.symbol_info_tick(sym)
-            if tick:
+            info = mt5.symbol_info(sym)
+            if tick and info:
                 live_data.append({
                     "symbol": sym,
                     "price": tick.bid,
-                    "spread": round((tick.ask - tick.bid) / (mt5.symbol_info(sym).point * 10), 1)
+                    "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
                 })
         
         res = mt5.positions_get()
