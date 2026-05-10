@@ -4,3 +4,6 @@ __pycache__/
 .vscode/
 .idea/
 demo_sr.py
+axon_bot.log
+trading_bot.db
+*.png
