@@ -301,3 +301,206 @@
 2026-05-11 01:02:01,865 [INFO] AxonBot: Scanning GBPJPYm...
 2026-05-11 01:02:02,358 [INFO] AxonBot: Bot stopped by user.
 2026-05-11 01:02:02,358 [INFO] AxonBot: MT5 Connection Closed.
+2026-05-11 01:02:04,553 [INFO] AxonBot: --- AXON TRADING BOT INITIALIZING ---
+2026-05-11 01:02:04,572 [INFO] src.mt5_connection: Connected to MT5 Server: 
+2026-05-11 01:02:04,573 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:04,701 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:04,701 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:04,818 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:04,819 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:04,934 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:06,652 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:06,654 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:06,656 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:07,050 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:02:14,935 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:15,054 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:15,055 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:15,166 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:15,167 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:15,283 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:16,659 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:16,660 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:16,660 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:17,272 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:02:25,284 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:25,398 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:25,398 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:25,511 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:25,511 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:25,629 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:26,661 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:26,663 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:26,663 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:27,496 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:02:35,630 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:35,749 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:35,750 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:35,865 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:35,865 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:35,981 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:36,665 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:36,665 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:36,666 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:37,717 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:02:45,982 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:46,095 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:46,096 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:46,213 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:46,213 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:46,325 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:46,667 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:46,667 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:46,668 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:47,940 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:02:56,325 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:02:56,441 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:02:56,442 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:02:56,558 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:02:56,559 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:02:56,669 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:02:56,670 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:02:56,670 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:02:56,687 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:02:58,207 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:06,672 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:06,673 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:06,673 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:06,688 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:03:06,811 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:03:06,811 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:03:06,924 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:03:06,925 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:03:07,045 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:03:08,437 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:14,496 [INFO] AxonBot: Bot stopped by user.
+2026-05-11 01:03:14,496 [INFO] AxonBot: MT5 Connection Closed.
+2026-05-11 01:03:16,674 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:16,674 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:16,675 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:18,689 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:26,676 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:26,678 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:26,679 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:28,929 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:30,728 [INFO] AxonBot: --- AXON TRADING BOT INITIALIZING ---
+2026-05-11 01:03:30,739 [INFO] src.mt5_connection: Connected to MT5 Server: 
+2026-05-11 01:03:30,739 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:03:30,861 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:03:30,861 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:03:30,978 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:03:30,978 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:03:31,114 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:03:36,680 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:36,681 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:36,682 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:39,149 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:41,115 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:03:41,238 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:03:41,238 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:03:41,367 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:03:41,367 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:03:41,485 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:03:46,683 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:46,683 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:46,684 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:49,405 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:03:51,486 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:03:51,624 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:03:51,625 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:03:51,762 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:03:51,762 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:03:51,896 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:03:56,685 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:03:56,686 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:03:56,686 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:03:59,666 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:01,897 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:02,073 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:02,073 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:02,203 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:02,203 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:02,326 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:06,687 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:06,688 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:06,689 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:04:09,910 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:12,326 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:12,459 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:12,460 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:12,592 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:12,593 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:12,718 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:16,690 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:16,692 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:16,693 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:04:20,182 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:22,718 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:22,857 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:22,857 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:22,978 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:22,978 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:23,104 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:26,695 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:26,696 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:26,696 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:04:30,429 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:33,104 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:33,242 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:33,242 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:33,370 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:33,370 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:33,500 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:36,697 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:36,698 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:36,699 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:04:40,727 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:43,501 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:43,633 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:43,634 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:43,758 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:43,758 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:43,881 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:46,700 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:46,701 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:46,702 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:04:50,983 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:04:53,881 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:04:54,016 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:04:54,016 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:04:54,137 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:04:54,137 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:04:54,257 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:04:56,703 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:04:56,705 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:04:56,706 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:05:01,230 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:05:04,258 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:05:04,398 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:05:04,398 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:05:04,560 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:05:04,560 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:05:04,681 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:05:06,708 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:05:06,708 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:05:06,709 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:05:11,520 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:05:14,682 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:05:14,809 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:05:14,809 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:05:14,937 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:05:14,937 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:05:15,057 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:05:16,710 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:05:16,711 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:05:16,711 [WARNING] src.mt5_connection: No market data returned for GBPJPY
+2026-05-11 01:05:21,753 [ERROR] AxonBot: Error processing EURUSDm: name 'datetime' is not defined
+2026-05-11 01:05:25,058 [INFO] AxonBot: Scanning XAUUSDm...
+2026-05-11 01:05:25,170 [INFO] AxonBot: [XAUUSDm] Price: 4715.309 | Zones Found: 59
+2026-05-11 01:05:25,170 [INFO] AxonBot: Scanning EURUSDm...
+2026-05-11 01:05:25,288 [INFO] AxonBot: [EURUSDm] Price: 1.17848 | Zones Found: 1
+2026-05-11 01:05:25,288 [INFO] AxonBot: Scanning GBPJPYm...
+2026-05-11 01:05:25,397 [INFO] AxonBot: [GBPJPYm] Price: 213.542 | Zones Found: 18
+2026-05-11 01:05:26,713 [WARNING] src.mt5_connection: No market data returned for XAUUSD
+2026-05-11 01:05:26,714 [WARNING] src.mt5_connection: No market data returned for EURUSD
+2026-05-11 01:05:26,715 [WARNING] src.mt5_connection: No market data returned for GBPJPY
