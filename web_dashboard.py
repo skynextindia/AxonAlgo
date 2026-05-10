@@ -176,14 +176,41 @@ HTML_TEMPLATE = """
 </html>
 """
 
+LOGIN_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>AXON | SECURITY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background: #010409; color: white; -webkit-font-smoothing: antialiased; }</style>
+</head>
+<body class="flex items-center justify-center h-screen bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black">
+    <div class="w-full max-w-sm p-12 rounded-[2.5rem] bg-slate-900/40 border border-white/10 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+        <div class="mb-12 text-center">
+            <h1 class="text-3xl font-black italic tracking-tighter uppercase mb-2">Axon<span class="text-blue-500">Algo</span></h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black">Secure Terminal Access</p>
+        </div>
+        <form action="/login" method="POST" class="space-y-8">
+            <div class="relative group">
+                <input type="password" name="password" required placeholder="PROTOCOL_KEY" class="w-full bg-black/60 border border-white/10 p-5 rounded-2xl text-center text-xl tracking-[0.5em] outline-none focus:border-blue-600 focus:ring-4 ring-blue-600/10 transition-all font-black">
+            </div>
+            <button class="w-full bg-blue-600 hover:bg-blue-500 p-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/20 active:scale-95 transition-all">Authorize Entry</button>
+        </form>
+        {% if error %}<p class="text-red-500 text-[10px] mt-8 text-center font-black uppercase tracking-[0.2em]">{{ error }}</p>{% endif %}
+    </div>
+</body>
+</html>
+"""
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         if request.form.get('password') == Config.ADMIN_PASSWORD:
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
-        return render_template_string(HTML_TEMPLATE, error="Invalid Access Protocol") # Using simple login template here for brevity
-    return render_template_string(HTML_TEMPLATE)
+        return render_template_string(LOGIN_TEMPLATE, error="Invalid Access Protocol")
+    return render_template_string(LOGIN_TEMPLATE)
 
 @app.route('/logout')
 def logout():
