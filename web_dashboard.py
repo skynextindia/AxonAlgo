@@ -118,13 +118,15 @@ HTML_TEMPLATE = """
         </header>
 
         <div class="workspace">
+            <!-- TERMINAL TAB -->
             <div id="tab-terminal" class="tab-content active space-y-6">
                 <!-- TICKER -->
                 <div class="panel">
                     <div class="panel-header">
                         <span class="panel-title">Asset Matrix</span>
                         <form action="/add_symbol" method="POST" class="flex gap-2">
-                            <input type="text" name="symbol" placeholder="[+]" class="bg-black border border-white/5 px-2 py-1 text-[10px] font-bold uppercase text-white outline-none focus:border-blue-500">
+                            <input type="text" name="symbol" placeholder="SYMBOL" class="bg-black border border-white/5 px-2 py-1 text-[10px] font-bold uppercase text-white outline-none focus:border-blue-500">
+                            <button type="submit" class="bg-blue-600 text-white px-2 text-[10px] font-bold">+</button>
                         </form>
                     </div>
                     <div id="ticker-grid" class="ticker-grid"></div>
@@ -143,8 +145,86 @@ HTML_TEMPLATE = """
                     </div>
                 </div>
             </div>
+
+            <!-- LAB TAB -->
+            <div id="tab-lab" class="tab-content space-y-6">
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="panel p-4 text-center">
+                        <div class="stat-label">Neural Win Rate</div>
+                        <div id="stat-winrate" class="text-2xl font-black text-emerald-500 mono">0.0%</div>
+                    </div>
+                    <div class="panel p-4 text-center">
+                        <div class="stat-label">Total Probations</div>
+                        <div id="stat-total" class="text-2xl font-black text-white mono">0</div>
+                    </div>
+                    <div class="panel p-4 text-center">
+                        <div class="stat-label">Avg Neural Edge</div>
+                        <div id="stat-avg" class="text-2xl font-black text-blue-500 mono">0.00</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Neural Observations (Rejected Trades)</span></div>
+                    <div class="p-4">
+                        <p class="text-xs text-gray-500 mb-4">Trades blocked by Finy due to insufficient alpha or macro-conflicts.</p>
+                        <div id="observations-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="tab-settings" class="tab-content space-y-6">
+                <div class="panel max-w-md mx-auto mt-10">
+                    <div class="panel-header"><span class="panel-title">Core System Settings</span></div>
+                    <form action="/update_settings" method="POST" class="p-6 space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Trading Enabled</label>
+                            <select name="trading_enabled" class="w-full bg-black border border-white/10 p-2 text-white outline-none">
+                                <option value="1">ACTIVE (LIVE TRADING)</option>
+                                <option value="0">SAFE MODE (SCAN ONLY)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Risk Per Trade (%)</label>
+                            <input type="number" step="0.01" name="risk_pct" class="w-full bg-black border border-white/10 p-2 text-white outline-none" placeholder="e.g. 1.0">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3 uppercase tracking-widest transition-colors">Apply Settings</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </main>
+
+    <!-- FINY AI SIDEBAR -->
+    <aside class="sidebar" style="width: 280px; border-right: none; border-left: 1px solid var(--border); padding: 1.5rem; justify-content: flex-start; align-items: flex-start;">
+        <div class="flex items-center gap-2 mb-6 w-full border-b border-white/10 pb-4">
+            <i data-lucide="brain" class="text-emerald-500"></i>
+            <span class="text-[11px] font-black text-white uppercase tracking-widest">Finy Assistant</span>
+            <div class="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        </div>
+        <p id="finy-thought-container" class="text-[11px] text-gray-400 italic leading-relaxed mb-6">"Monitoring live order flow and macroeconomic confluences across all node assets. Standing by."</p>
+        
+        <div class="w-full">
+            <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">System Settings</span>
+            <div id="finy-settings-status" class="text-[10px] mono text-blue-400 mb-6 bg-white/[0.02] p-2 rounded border border-white/5">LOADING...</div>
+            
+            <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Live AI Feed</span>
+            <div id="finy-stream" class="space-y-3 overflow-y-auto mb-6" style="max-height: 300px;">
+                <!-- Live insights injected here -->
+            </div>
+
+            <!-- CHAT INTERFACE -->
+            <div class="border-t border-white/10 pt-4 mt-auto">
+                <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Chat with Finy</span>
+                <div id="chat-box" class="h-32 overflow-y-auto text-[10px] space-y-2 mb-3 mono text-gray-400">
+                    <div>Finy: System online. How can I help?</div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Type message..." class="flex-1 bg-black border border-white/10 p-2 text-[10px] text-white outline-none focus:border-blue-500">
+                    <button onclick="sendChat()" class="bg-blue-600 px-3 text-[10px] text-white font-bold">SEND</button>
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <div id="scan-modal" class="modal" onclick="this.classList.remove('active')">
         <div class="modal-box" onclick="event.stopPropagation()" id="scan-content"></div>
@@ -216,7 +296,6 @@ HTML_TEMPLATE = """
                 // Events & News
                 const eventsPanel = document.getElementById('events-stream');
                 let html = '';
-                
                 if (data.news && data.news.length > 0) {
                     html += `<div class="text-[10px] text-gray-500 font-bold mb-2 uppercase">Global Market News</div>`;
                     html += data.news.map(n => `
@@ -226,7 +305,6 @@ HTML_TEMPLATE = """
                         </div>
                     `).join('');
                 }
-                
                 html += `<div class="text-[10px] text-gray-500 font-bold mb-2 mt-4 uppercase">Calendar Events (Today)</div>`;
                 if (data.events && data.events.length > 0) {
                     html += data.events.map(e => `
@@ -243,12 +321,75 @@ HTML_TEMPLATE = """
                 }
                 eventsPanel.innerHTML = html;
 
+                // Finy Settings Status
+                if (data.settings) {
+                    const statusStr = (data.settings.trading_enabled == 1) ? '<span class="text-emerald-500">LIVE</span>' : '<span class="text-red-500">SAFE MODE</span>';
+                    document.getElementById('finy-settings-status').innerHTML = `MODE: ${statusStr} | RISK: ${data.settings.risk_pct}%`;
+                    const riskInput = document.querySelector('input[name="risk_pct"]');
+                    if(document.activeElement !== riskInput) riskInput.value = data.settings.risk_pct;
+                    const modeSelect = document.querySelector('select[name="trading_enabled"]');
+                    if(document.activeElement !== modeSelect) modeSelect.value = data.settings.trading_enabled;
+                }
+
+                // Finy Observations
+                if (data.observations) {
+                    const obsHTML = data.observations.map(o => `
+                        <div class="border border-white/5 bg-white/[0.02] p-3 rounded mb-2">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-[10px] font-black uppercase text-${o.direction === 'BUY' ? 'emerald' : 'red'}-500">${o.symbol} ${o.direction}</span>
+                                <span class="text-[9px] mono text-blue-400">FINY: ${o.finy}</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-medium">REJECT: ${o.reason}</div>
+                            <div class="text-[9px] text-gray-600 mono mt-1">${o.time}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('observations-list').innerHTML = obsHTML || '<div class="text-xs text-gray-600 italic">No rejected trades.</div>';
+                    document.getElementById('finy-stream').innerHTML = obsHTML || '<div class="text-xs text-gray-600 italic">No neural insights.</div>';
+                }
+
+                // Stats & Thoughts
+                if (data.stats) {
+                    document.getElementById('stat-winrate').textContent = (data.stats.win_rate || 0) + '%';
+                    document.getElementById('stat-total').textContent = data.stats.total_trades || 0;
+                    document.getElementById('stat-avg').textContent = (data.stats.avg_profit || 0).toFixed(2);
+                }
+                if (data.finy_thought) {
+                    document.getElementById('finy-thought-container').innerHTML = `"${data.finy_thought}"`;
+                }
+
             } catch (e) { console.error("Sync_Fail", e); }
+        }
+
+        document.getElementById('chat-input')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendChat();
+        });
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const box = document.getElementById('chat-box');
+            const msg = input.value.trim();
+            if(!msg) return;
+            
+            box.innerHTML += `<div class="text-white">You: ${msg}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                box.innerHTML += `<div class="text-emerald-500">Finy: ${data.response}</div>`;
+                box.scrollTop = box.scrollHeight;
+            } catch (e) { console.error(e); }
         }
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-'+id)?.classList.add('active');
+            const target = document.getElementById('tab-'+id);
+            if(target) target.classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
         }
@@ -264,22 +405,13 @@ HTML_TEMPLATE = """
                 </div>
                 <div class="text-center py-8 text-gray-500 italic text-sm">Initiating Neural Probe...</div>
             `;
-            
             try {
                 const res = await fetch('/api/scan/' + sym);
                 const data = await res.json();
-                
                 if (data.error) {
-                    content.innerHTML = `
-                        <div class="flex justify-between border-b border-white/5 pb-4 mb-6">
-                            <h2 class="text-xl font-black text-white uppercase">${sym} :: Deep Scan</h2>
-                            <button class="text-gray-600 hover:text-white" onclick="document.getElementById('scan-modal').classList.remove('active')">✕</button>
-                        </div>
-                        <div class="text-center py-8 text-red-500 italic text-sm">Error: ${data.error}</div>
-                    `;
+                    content.innerHTML = `<div class="p-4 text-red-500">Error: ${data.error}</div>`;
                     return;
                 }
-
                 content.innerHTML = `
                     <div class="flex justify-between border-b border-white/5 pb-4 mb-6">
                         <h2 class="text-xl font-black text-white uppercase">${sym} :: Deep Scan</h2>
@@ -299,9 +431,7 @@ HTML_TEMPLATE = """
                         <p class="text-xs text-gray-400 italic font-medium leading-relaxed">"${data.ai_text}"</p>
                     </div>
                 `;
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
         }
 
         setInterval(updateHUD, 300);
@@ -340,7 +470,8 @@ def dashboard():
 @app.route('/api/data')
 def get_data():
     if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
-    settings = db.get_system_settings()
+    settings_row = db.get_system_settings()
+    settings = dict(settings_row)
     positions = []
     live_data = []
     account = {"equity": 0}
@@ -398,7 +529,83 @@ def get_data():
         except: pass
         events = EVENTS_CACHE["data"]
 
-    return jsonify({"live_data": live_data, "positions": positions, "account": account, "events": events, "news": fetch_market_news()})
+
+    observations = []
+    stats = {"win_rate": 0, "total_trades": 0, "avg_profit": 0}
+    try:
+        conn = sqlite3.connect("axon_trading.db")
+        # Do not use row_factory here to avoid serialization issues
+        c = conn.cursor()
+        
+        # Observations
+        c.execute("SELECT symbol, direction, entry_price, finy_score, reason, timestamp FROM observations ORDER BY timestamp DESC LIMIT 20")
+        for row in c.fetchall():
+            observations.append({
+                "symbol": str(row[0]), 
+                "direction": str(row[1]), 
+                "price": float(row[2]), 
+                "finy": float(row[3]), 
+                "reason": str(row[4]), 
+                "time": str(row[5])
+            })
+        
+        # Stats
+        try:
+            c.execute("SELECT COUNT(*), SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END), AVG(pnl) FROM trades")
+            row = c.fetchone()
+            if row and row[0] and row[0] > 0:
+                stats = {
+                    "total_trades": int(row[0]),
+                    "win_rate": round((float(row[1] or 0) / float(row[0])) * 100, 1),
+                    "avg_profit": round(float(row[2] or 0), 2)
+                }
+        except Exception as e:
+            print("Stats Error:", e)
+        
+        conn.close()
+    except Exception as e:
+        print("DB Error:", e)
+
+    finy_thoughts = [
+        "Analyzing multi-timeframe order flow divergence...",
+        "Institutional volume detected in EURUSD sell-side.",
+        "Market sentiment shifting to RISK_OFF. High volatility expected.",
+        "Neural probe suggests liquidity grab near current resistance.",
+        "Cross-asset correlation suggests USD strength is peaking."
+    ]
+    import random
+    thought = random.choice(finy_thoughts)
+
+    return jsonify({
+        "live_data": live_data, 
+        "positions": positions, 
+        "account": account, 
+        "events": events, 
+        "news": fetch_market_news(), 
+        "settings": settings, 
+        "observations": observations,
+        "stats": stats,
+        "finy_thought": thought
+    })
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
+    msg = request.json.get('message', '').lower()
+    settings = dict(db.get_system_settings())
+    
+    if "status" in msg or "running" in msg:
+        resp = f"Core systems operational. Neural scans active on {settings['symbols']}."
+    elif "profit" in msg or "pnl" in msg:
+        resp = "PNL is tracked in real-time. Neural focus is on trend-confluence for optimization."
+    elif "market" in msg:
+        resp = "Sentiment is mixed. Volatility levels are fluctuating. Higher probability setups in indices currently."
+    elif "who are you" in msg or "finy" in msg:
+        resp = "I am Finy, your Neural Trading Assistant. I monitor institutional flows and macroeconomic vectors."
+    else:
+        resp = "Neural engine processing query. Recommendation: Maintain strict risk management and monitor institutional strength."
+        
+    return jsonify({"response": resp})
 
 @app.route('/api/scan/<symbol>')
 def scan_symbol(symbol):
@@ -436,6 +643,25 @@ def scan_symbol(symbol):
         "ai_text": ai_text,
         "color": color
     })
+
+@app.route('/update_settings', methods=['POST'])
+def update_settings():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    risk_pct = request.form.get('risk_pct')
+    trading_enabled = request.form.get('trading_enabled')
+    settings = db.get_system_settings()
+    
+    if risk_pct is not None:
+        try: risk_pct = float(risk_pct)
+        except: risk_pct = settings['risk_pct']
+    else: risk_pct = settings['risk_pct']
+    
+    if trading_enabled is not None:
+        trading_enabled = int(trading_enabled)
+    else: trading_enabled = settings['trading_enabled']
+    
+    db.update_system_settings(risk_pct, trading_enabled, settings['symbols'])
+    return redirect(url_for('dashboard'))
 
 @app.route('/add_symbol', methods=['POST'])
 def add_symbol():
