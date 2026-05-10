@@ -8,8 +8,11 @@ from src.engines.risk_engine import RiskEngine
 from src.engines.filter_engine import FilterEngine
 from src.engines.candle_engine import CandleEngine
 from src.executor import TradeExecutor
+from src.database import TradingDatabase
 import MetaTrader5 as mt5
 from tabulate import tabulate
+
+db = TradingDatabase()
 
 # Professional Logging Configuration
 logging.basicConfig(
@@ -62,8 +65,9 @@ def main():
                 zones = sr.get_zones(df)
                 signal = breakout.check_breakout(df, zones)
                 current_price = df.iloc[-1]['close']
+                metrics = db.get_metrics()
                 
-                logger.info(f"[{Config.SYMBOL}] Price: {current_price} | Session: {'OPEN' if is_safe else 'CLOSED'}")
+                logger.info(f"[{Config.SYMBOL}] Price: {current_price} | WinRate: {metrics['win_rate']}% | PNL: {metrics['total_pnl']}")
                 
                 if signal:
                     if not is_safe:

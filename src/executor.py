@@ -1,7 +1,9 @@
 import MetaTrader5 as mt5
 import logging
+from src.database import TradingDatabase
 
 logger = logging.getLogger(__name__)
+db = TradingDatabase()
 
 class TradeExecutor:
     @staticmethod
@@ -37,6 +39,10 @@ class TradeExecutor:
                 return False
             
             logger.info(f"ORDER SUCCESS: {signal_type} @ {result.price} | Lots: {lots}")
+            
+            # Record to Local Database
+            db.log_trade(symbol, signal_type, lots, result.price, sl, tp)
+            
             return True
         except Exception as e:
             logger.critical(f"Execution Engine Crash: {e}")
