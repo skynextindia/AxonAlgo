@@ -43,12 +43,12 @@ HTML_TEMPLATE = """
                     </div>
                 </div>
             </div>
-            <div class="flex gap-4 w-full md:w-auto">
-                <div class="glass px-6 py-3 flex flex-col justify-center">
-                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Global PNL</span>
-                    <span class="text-xl font-black text-emerald-400 italic">${{ metrics.total_pnl }}</span>
+            <div class="flex items-center gap-8">
+                <div class="hidden md:flex items-center gap-3 text-[10px] mono font-bold">
+                    <span class="w-2 h-2 {{ 'bg-emerald-500' if latency < 100 else 'text-red-500' }} rounded-full status-pulse"></span>
+                    <span class="text-slate-500 uppercase">Latency:</span> <span class="{{ 'text-emerald-400' if latency < 100 else 'text-red-400' }}">{{ latency }}ms</span>
                 </div>
-                <a href="/logout" class="glass px-6 py-3 flex items-center justify-center text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 transition-colors">Exit</a>
+                <a href="/logout" class="bg-white/5 hover:bg-red-500/10 border border-white/10 px-5 py-2 rounded-full text-[10px] uppercase font-black tracking-widest transition-all">Terminate Session</a>
             </div>
         </header>
 
@@ -74,19 +74,24 @@ HTML_TEMPLATE = """
                     </form>
                 </div>
 
-                <div class="glass p-8">
-                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-slate-400">Asset Management</h3>
-                    <div class="space-y-3 mb-6 max-h-[200px] overflow-y-auto pr-2">
+                <div class="glass p-8 border-t-2 border-t-blue-600/30">
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-8 text-blue-400">Institutional Portfolio</h3>
+                    <div class="space-y-4 mb-8 max-h-[300px] overflow-y-auto pr-2">
                         {% for sym in active_symbols %}
-                        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg group">
-                            <span class="text-[11px] mono font-bold">{{ sym }}</span>
-                            <a href="/remove_symbol/{{ sym }}" class="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</a>
+                        <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl hover:border-blue-500/30 transition-all">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
+                                <span class="text-[12px] mono font-bold tracking-tighter">{{ sym }}</span>
+                            </div>
+                            <a href="/remove_symbol/{{ sym }}" class="bg-red-500/10 hover:bg-red-500/20 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold">✕</a>
                         </div>
                         {% endfor %}
                     </div>
-                    <form action="/add_symbol" method="POST" class="flex gap-2">
-                        <input type="text" name="symbol" placeholder="BTCUSDm..." class="flex-1 bg-black/50 border border-white/10 p-3 rounded-lg text-xs font-bold uppercase">
-                        <button class="bg-white/10 px-4 rounded-lg font-black">+</button>
+                    <form action="/add_symbol" method="POST" class="space-y-4">
+                        <div class="relative">
+                            <input type="text" name="symbol" placeholder="ENTER_SYMBOL (e.g. BTCUSDm)" class="w-full bg-black/60 border border-white/10 p-4 rounded-xl text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none transition-all">
+                        </div>
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">Add to Scanning Core</button>
                     </form>
                 </div>
             </div>
@@ -226,9 +231,13 @@ def dashboard():
     settings = db.get_system_settings()
     active_symbols = settings['symbols'].split(',')
     
-    # Live Data Matrix
+    # Live Data Matrix & Ping
     live_data = []
     positions = []
+    latency = 0
+    import time
+    
+    start_time = time.time()
     if mt5.initialize():
         for sym in active_symbols:
             tick = mt5.symbol_info_tick(sym)
@@ -239,6 +248,8 @@ def dashboard():
                     "price": tick.bid,
                     "spread": round((tick.ask - tick.bid) / (info.point * 10), 1)
                 })
+        
+        latency = round((time.time() - start_time) * 1000, 2)
         
         res = mt5.positions_get()
         if res:
@@ -253,7 +264,7 @@ def dashboard():
             
     return render_template_string(HTML_TEMPLATE, metrics=metrics, settings=settings, 
                                  active_symbols=active_symbols, live_data=live_data, 
-                                 positions=positions, logs=logs)
+                                 positions=positions, logs=logs, latency=latency)
 
 @app.route('/update', methods=['POST'])
 def update_settings():
