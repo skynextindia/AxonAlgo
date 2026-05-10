@@ -214,7 +214,8 @@ HTML_TEMPLATE = """
                     <option value="EURUSDm">EURUSD (Euro)</option>
                     <option value="BTCUSDm">BTCUSD (Bitcoin)</option>
                 </select>
-                <button onclick="triggerDemo(document.getElementById('demo-symbol-select').value)" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] py-2 uppercase tracking-widest transition-all">Execute Test Order</button>
+                <button onclick="if(confirm('WARNING: This will execute a LIVE test order (0.01 lots) on your MT5 terminal. Proceed?')) triggerDemo(document.getElementById('demo-symbol-select').value)" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] py-2 uppercase tracking-widest transition-all mb-2">Execute Test Order</button>
+                <button onclick="closeAllTrades()" class="w-full bg-red-600/20 hover:bg-red-600/40 text-red-500 font-bold text-[9px] py-2 uppercase tracking-widest transition-all border border-red-500/30">Close All Positions</button>
             </div>
 
             <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Live AI Feed</span>
@@ -296,35 +297,50 @@ HTML_TEMPLATE = """
                 document.getElementById('pos-count').textContent = data.positions.length + '_ACTIVE';
                 list.innerHTML = data.positions.map(p => {
                     const isTrailing = (p.type === 'BUY' && p.sl > p.price_open) || (p.type === 'SELL' && p.sl > 0 && p.sl < p.price_open);
+                    
+                    // Estimate potential PnL based on current profit/price ratio
+                    let currentDist = Math.abs(data.live_data.find(s => s.symbol === p.symbol)?.price - p.price_open) || 0.0001;
+                    let pipsPerDollar = p.profit / currentDist;
+                    let estProfit = Math.abs(p.tp - p.price_open) * Math.abs(pipsPerDollar);
+                    let estLoss = Math.abs(p.sl - p.price_open) * Math.abs(pipsPerDollar);
+
                     return `
-                    <div class="trade-row flex flex-col gap-1 p-3 bg-white/[0.02] border border-white/5 rounded mb-2">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${p.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">${p.type}</span>
-                                <span class="text-[11px] font-black text-white uppercase tracking-tight">${p.symbol}</span>
-                                ${isTrailing ? '<span class="text-[8px] font-black bg-blue-500/20 text-blue-400 px-1 rounded animate-pulse">TRAILING</span>' : ''}
+                    <div class="p-2 mb-2 bg-white/[0.02] border border-white/5 rounded hover:border-white/10 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[8px] font-black px-1 rounded ${p.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">${p.type}</span>
+                                    <span class="text-[10px] font-black text-white tracking-tighter">${p.symbol}</span>
+                                    ${isTrailing ? '<span class="text-[7px] font-black text-blue-400">TRL</span>' : ''}
+                                </div>
+                                <span class="text-[8px] text-gray-700 mono">#${p.ticket} | ${p.volume}L</span>
                             </div>
-                            <div class="text-right font-black mono text-[11px] ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}</div>
-                        </div>
-                        <div class="grid grid-cols-4 gap-2 mt-2 border-t border-white/5 pt-2">
-                            <div>
-                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">Open</span>
-                                <span class="mono text-[10px] text-gray-300">${p.price_open.toFixed(5)}</span>
-                            </div>
-                            <div>
-                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">SL</span>
-                                <span class="mono text-[10px] ${p.sl > 0 ? 'text-red-400' : 'text-gray-700'}">${p.sl > 0 ? p.sl.toFixed(5) : '0.000'}</span>
-                            </div>
-                            <div>
-                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">TP</span>
-                                <span class="mono text-[10px] ${p.tp > 0 ? 'text-emerald-400' : 'text-gray-700'}">${p.tp > 0 ? p.tp.toFixed(5) : '0.000'}</span>
-                            </div>
-                            <div>
-                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">Lots</span>
-                                <span class="mono text-[10px] text-gray-500">${p.volume}</span>
+                            <div class="text-right">
+                                <div class="text-[11px] font-black mono ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'} animate-pulse">
+                                    ${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}
+                                </div>
                             </div>
                         </div>
-                        <div class="text-[8px] text-gray-800 mono mt-1">ID: #${p.ticket}</div>
+                        
+                        <div class="grid grid-cols-3 gap-1 border-t border-white/5 pt-2">
+                            <div class="text-center">
+                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Entry</div>
+                                <div class="text-[9px] text-gray-400 mono">${p.price_open.toFixed(5)}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Exp. TP</div>
+                                <div class="text-[9px] text-emerald-500/80 mono">+${estProfit.toFixed(1)}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Exp. SL</div>
+                                <div class="text-[9px] text-red-500/80 mono">-${estLoss.toFixed(1)}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between mt-1 text-[8px] mono text-gray-800">
+                            <span>SL: ${p.sl > 0 ? p.sl.toFixed(5) : 'NONE'}</span>
+                            <span>TP: ${p.tp > 0 ? p.tp.toFixed(5) : 'NONE'}</span>
+                        </div>
                     </div>
                 `;}).join('');
 
@@ -495,6 +511,16 @@ HTML_TEMPLATE = """
                     btn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] py-3 uppercase tracking-widest";
                 }, 3000);
             }
+        }
+
+        async function closeAllTrades() {
+            if(!confirm('This will CLOSE ALL active positions. Are you sure?')) return;
+            try {
+                const res = await fetch('/api/close_all');
+                const data = await res.json();
+                alert(data.message || data.error);
+                updateHUD();
+            } catch (e) { console.error(e); }
         }
 
         setInterval(updateHUD, 300);
@@ -678,6 +704,34 @@ def api_chat():
         resp = "Neural engine processing query. Recommendation: Maintain strict risk management and monitor institutional strength."
         
     return jsonify({"response": resp})
+
+@app.route('/api/close_all')
+def api_close_all():
+    if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
+    if not mt5.initialize(): return jsonify({"error": "MT5 offline"}), 500
+    
+    positions = mt5.positions_get()
+    closed_count = 0
+    if positions:
+        for p in positions:
+            tick = mt5.symbol_info_tick(p.symbol)
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": p.symbol,
+                "volume": p.volume,
+                "type": mt5.ORDER_TYPE_SELL if p.type == 0 else mt5.ORDER_TYPE_BUY,
+                "position": p.ticket,
+                "price": tick.bid if p.type == 0 else tick.ask,
+                "magic": 123456,
+                "comment": "Neural Force Close",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
+            res = mt5.order_send(request)
+            if res.retcode == mt5.TRADE_RETCODE_DONE:
+                closed_count += 1
+    
+    return jsonify({"success": True, "message": f"Successfully closed {closed_count} positions."})
 
 @app.route('/api/trigger_demo/<symbol>')
 def trigger_demo(symbol):
