@@ -140,54 +140,56 @@ HTML_TEMPLATE = """
 
                 // Update Price Matrix
                 const matrix = document.getElementById('price-matrix');
-                let matrixHtml = '';
-                
-                // Add Live Cards
-                data.live_data.forEach(sym => {
-                    const priceClass = lastPrices[sym.symbol] < sym.price ? 'price-up' : (lastPrices[sym.symbol] > sym.price ? 'price-down' : '');
-                    lastPrices[sym.symbol] = sym.price;
-                    
-                    matrixHtml += `
-                        <div class="glass p-6 relative overflow-hidden border-b-2 border-b-blue-500/30">
-                            <div class="flex justify-between items-start mb-4">
-                                <span class="text-xs font-black tracking-tighter text-blue-400 uppercase">${sym.symbol}</span>
-                                <span class="text-[9px] mono text-slate-600">LIVE_DATA</span>
-                            </div>
-                            <div class="flex items-end gap-2">
-                                <span class="text-3xl font-black italic tracking-tighter ${priceClass}">${sym.price.toFixed(5)}</span>
-                                <span class="text-[10px] mb-1 ${sym.spread < 20 ? 'text-emerald-400' : 'text-yellow-400'}">S: ${sym.spread}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                // Add Offline Warnings
-                data.active_symbols.forEach(sym => {
-                    if (!data.live_data.find(d => d.symbol.toUpperCase() === sym.toUpperCase())) {
+                if (matrix && data.live_data) {
+                    let matrixHtml = '';
+                    data.live_data.forEach(sym => {
+                        const priceClass = lastPrices[sym.symbol] < sym.price ? 'price-up' : (lastPrices[sym.symbol] > sym.price ? 'price-down' : '');
+                        lastPrices[sym.symbol] = sym.price;
                         matrixHtml += `
-                            <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
+                            <div class="glass p-6 relative overflow-hidden border-b-2 border-b-blue-500/30">
                                 <div class="flex justify-between items-start mb-4">
-                                    <span class="text-xs font-black tracking-tighter text-red-400 uppercase">${sym}</span>
-                                    <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
+                                    <span class="text-xs font-black tracking-tighter text-blue-400 uppercase">${sym.symbol}</span>
+                                    <span class="text-[9px] mono text-slate-600">LIVE_DATA</span>
                                 </div>
-                                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">NOT_FOUND_IN_MT5</div>
+                                <div class="flex items-end gap-2">
+                                    <span class="text-3xl font-black italic tracking-tighter ${priceClass}">${(sym.price || 0).toFixed(5)}</span>
+                                    <span class="text-[10px] mb-1 ${sym.spread < 20 ? 'text-emerald-400' : 'text-yellow-400'}">S: ${sym.spread}</span>
+                                </div>
                             </div>
                         `;
+                    });
+                    
+                    if (data.active_symbols) {
+                        data.active_symbols.forEach(sym => {
+                            if (!data.live_data.find(d => d.symbol.toUpperCase() === sym.toUpperCase())) {
+                                matrixHtml += `
+                                    <div class="glass p-6 border-2 border-dashed border-red-500/20 opacity-60">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <span class="text-xs font-black tracking-tighter text-red-400 uppercase">${sym}</span>
+                                            <span class="text-[9px] mono text-red-500 font-bold">OFFLINE</span>
+                                        </div>
+                                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">NOT_FOUND_IN_MT5</div>
+                                    </div>
+                                `;
+                            }
+                        });
                     }
-                });
-                matrix.innerHTML = matrixHtml;
+                    matrix.innerHTML = matrixHtml;
+                }
 
                 // Update Portfolio List
                 const portList = document.getElementById('portfolio-list');
-                portList.innerHTML = data.active_symbols.map(sym => `
-                    <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl">
-                        <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                            <span class="text-[12px] mono font-bold">${sym}</span>
+                if (portList && data.active_symbols) {
+                    portList.innerHTML = data.active_symbols.map(sym => `
+                        <div class="flex justify-between items-center bg-white/5 border border-white/5 p-4 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                <span class="text-[12px] mono font-bold">${sym}</span>
+                            </div>
+                            <a href="/remove_symbol/${sym}" class="bg-red-500/10 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg font-bold">✕</a>
                         </div>
-                        <a href="/remove_symbol/${sym}" class="bg-red-500/10 text-red-500 w-8 h-8 flex items-center justify-center rounded-lg font-bold hover:bg-red-500/20 transition-all">✕</a>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
 
                 // Update Positions
                 const posBody = document.getElementById('positions-body');
