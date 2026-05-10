@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime as dt
 import pytz
 from src.config import Config
 from src.engines.news_engine import NewsEngine
@@ -21,7 +21,7 @@ class FilterEngine:
 
         # 2. Session Filter (Protects against low liquidity/fakeouts)
         # We use UTC for consistency across VPS/Local deployments
-        current_hour_utc = datetime.now(pytz.utc).hour
+        current_hour_utc = dt.datetime.now(pytz.utc).hour
         if not (Config.SESSION_START <= current_hour_utc <= Config.SESSION_END):
             return False, f"Off-Session (UTC Hour: {current_hour_utc})"
 
