@@ -13,7 +13,6 @@ from src.database import TradingDatabase
 from src.notifier import TelegramNotifier
 import MetaTrader5 as mt5
 from logging.handlers import RotatingFileHandler
-from tabulate import tabulate
 
 db = TradingDatabase()
 notifier = TelegramNotifier()

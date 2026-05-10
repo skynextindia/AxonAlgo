@@ -266,7 +266,9 @@ def dashboard():
     import time
     
     start_time = time.time()
-    if mt5.initialize():
+    # Attempt connection without force-initializing if already active
+    is_mt5_ok = mt5.initialize()
+    if is_mt5_ok:
         for sym in active_symbols:
             tick = mt5.symbol_info_tick(sym)
             info = mt5.symbol_info(sym)
@@ -283,6 +285,10 @@ def dashboard():
         if res:
             for p in res:
                 positions.append({"ticket": p.ticket, "symbol": p.symbol, "profit": round(p.profit, 2)})
+    else:
+        # If MT5 fails to initialize, try to report why
+        last_error = mt5.last_error()
+        print(f"MT5 Init Error: {last_error}")
     
     # Read last 20 logs
     logs = []
