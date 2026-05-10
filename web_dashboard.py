@@ -30,7 +30,7 @@ HTML_TEMPLATE = """
         .price-down { color: #ef4444; animation: pulse-down 0.5s ease-out; }
         @keyframes pulse-up { from { background: rgba(16, 185, 129, 0.1); } to { background: transparent; } }
         @keyframes pulse-down { from { background: rgba(239, 68, 68, 0.1); } to { background: transparent; } }
-    </script>
+    </style>
 </head>
 <body class="p-6 md:p-12">
     <div class="max-w-[1600px] mx-auto">
