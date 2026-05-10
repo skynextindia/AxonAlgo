@@ -1,7 +1,7 @@
-# Axon Stealth Intelligence Terminal (v19.4) 🚀
-**Institutional-Grade Neural Trading Bot & Command Dashboard**
+# Finter 🚀
+**Most advanced terminal with AI+Trading Agents**
 
-Axon Stealth is a high-performance algorithmic trading system optimized for MetaTrader 5. It leverages the **Finy.AI Neural Engine** to validate institutional breakout patterns across multi-timeframe vectors.
+Finter is a high-performance algorithmic trading system optimized for MetaTrader 5. It leverages the **Finy.AI Neural Engine** to validate institutional breakout patterns across multi-timeframe vectors.
 
 ---
 
@@ -15,13 +15,13 @@ The terminal is powered by **Finy.AI**, a proprietary neural assistant that:
 ### 🚀 Core Capabilities
 - **Institutional S/R Engine**: Clusters fractal highs/lows into dynamic supply/demand zones.
 - **MTF Trend Filter**: Validates H4/D1 trend confluences using neural-weighted EMAs.
-- **Stealth Dashboard**: 300ms hyper-sync HUD for real-time order flow monitoring.
+- **Finter Dashboard**: 300ms hyper-sync HUD for real-time order flow monitoring.
 - **Risk Control Hub**: Dynamic 1% fixed fractional risk management with institutional safety toggles.
 
 ---
 
 ### 📊 System Metadata (Auto-Generated)
-- **Last Updated**: 2026-05-11 04:52
+- **Last Updated**: 2026-05-11 04:55
 - **Total Lines of Code & Docs**: 1,945
 - **Neural Accuracy Engine**: V2.1 (Overclocked)
 

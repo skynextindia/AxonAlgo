@@ -44,7 +44,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXON STEALTH | Node 01</title>
+    <title>FINTER | Node 01</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@ HTML_TEMPLATE = """
             <div class="stat"><div class="stat-label">Equity</div><div id="acc-equity" class="stat-value">$0.00</div></div>
             <div class="stat"><div class="stat-label">Net PnL</div><div id="acc-pnl" class="stat-value text-emerald-500">0.00</div></div>
             <div class="stat"><div class="stat-label">Neural Status</div><div class="stat-value text-blue-500">ACTIVE_SCAN</div></div>
-            <div class="ml-auto mono text-[10px] text-gray-700">NODE_ID: AXON_01_SECURE</div>
+            <div class="ml-auto mono text-[10px] text-gray-700">NODE_ID: FINTER_01_SECURE</div>
         </header>
 
         <div class="workspace">
@@ -451,7 +451,7 @@ def login():
     return render_template_string("""
     <!DOCTYPE html><html><body style="background:#000;color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">
     <div style="background:#0a0a0a;padding:50px;border-radius:4px;border:1px solid #111;text-align:center">
-        <h1 style="text-transform:uppercase;margin-bottom:30px;letter-spacing:0.2em;font-weight:900;font-size:18px">Axon<span style="color:#3b82f6">Stealth</span></h1>
+        <h1 style="text-transform:uppercase;margin-bottom:30px;letter-spacing:0.2em;font-weight:900;font-size:18px">Finter<span style="color:#3b82f6">.AI</span></h1>
         <form action="/login" method="POST"><input type="password" name="password" style="background:#000;border:1px solid #222;padding:12px;color:white;text-align:center;width:200px" placeholder="AUTH_KEY"><br><br>
         <button style="background:#3b82f6;color:white;border:none;padding:12px;width:100%;font-weight:bold;cursor:pointer">INITIALIZE</button></form>
     </div></body></html>

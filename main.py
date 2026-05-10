@@ -23,11 +23,11 @@ log_handler = RotatingFileHandler("axon_bot.log", maxBytes=5*1024*1024, backupCo
 log_handler.setFormatter(log_formatter)
 
 logging.basicConfig(level=logging.INFO, handlers=[log_handler, logging.StreamHandler()])
-logger = logging.getLogger("AxonBot")
+logger = logging.getLogger("Finter")
 
 def main():
-    logger.info("--- AXON NEURAL CORE INITIALIZING ---")
-    notifier.send_message("🚀 *Axon Neural Gatekeeper Online*\nSyncing with MT5 Node.")
+    logger.info("--- FINTER NEURAL CORE INITIALIZING ---")
+    notifier.send_message("🚀 *Finter Neural Gatekeeper Online*\nSyncing with MT5 Node.")
     
     if not MT5Client.connect():
         logger.critical("Could not connect to MT5. Exiting.")

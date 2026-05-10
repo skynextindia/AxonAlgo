@@ -18,7 +18,7 @@ class TelegramNotifier:
         url = f"https://api.telegram.org/bot{self.token}/sendMessage"
         payload = {
             "chat_id": self.chat_id,
-            "text": f"🤖 *AxonAlgo Alert*\n\n{message}",
+            "text": f"🤖 *Finter Alert*\n\n{message}",
             "parse_mode": "Markdown"
         }
         
