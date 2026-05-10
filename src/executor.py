@@ -35,18 +35,16 @@ class TradeExecutor:
             result = mt5.order_send(request)
             
             if result.retcode != mt5.TRADE_RETCODE_DONE:
-                logger.error(f"ORDER FAILED: {result.comment} (Code: {result.retcode})")
-                return False
+                err_msg = f"{result.comment} (Code: {result.retcode})"
+                logger.error(f"ORDER FAILED: {err_msg}")
+                return False, err_msg
             
             logger.info(f"ORDER SUCCESS: {signal_type} @ {result.price} | Lots: {lots}")
-            
-            # Record to Local Database with Intelligence
             db.log_trade(symbol, signal_type, lots, result.price, sl, tp, reason, criteria)
-            
-            return True
+            return True, f"Executed at {result.price}"
         except Exception as e:
             logger.critical(f"Execution Engine Crash: {e}")
-            return False
+            return False, str(e)
 
     @staticmethod
     def update_sl(ticket, new_sl):

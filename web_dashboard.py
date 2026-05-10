@@ -207,8 +207,18 @@ HTML_TEMPLATE = """
             <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">System Settings</span>
             <div id="finy-settings-status" class="text-[10px] mono text-blue-400 mb-6 bg-white/[0.02] p-2 rounded border border-white/5">LOADING...</div>
             
+            <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Quick Demo Execution</span>
+            <div class="bg-white/[0.02] border border-white/5 p-3 rounded mb-6">
+                <select id="demo-symbol-select" class="w-full bg-black border border-white/10 text-[10px] text-white p-2 mb-2 outline-none">
+                    <option value="XAUUSDm">XAUUSD (Gold)</option>
+                    <option value="EURUSDm">EURUSD (Euro)</option>
+                    <option value="BTCUSDm">BTCUSD (Bitcoin)</option>
+                </select>
+                <button onclick="triggerDemo(document.getElementById('demo-symbol-select').value)" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] py-2 uppercase tracking-widest transition-all">Execute Test Order</button>
+            </div>
+
             <span class="text-[9px] font-bold text-gray-500 uppercase mb-2 block">Live AI Feed</span>
-            <div id="finy-stream" class="space-y-3 overflow-y-auto mb-6" style="max-height: 300px;">
+            <div id="finy-stream" class="space-y-3 overflow-y-auto mb-6" style="max-height: 250px;">
                 <!-- Live insights injected here -->
             </div>
 
@@ -284,14 +294,39 @@ HTML_TEMPLATE = """
                 // Trades
                 const list = document.getElementById('positions-list');
                 document.getElementById('pos-count').textContent = data.positions.length + '_ACTIVE';
-                list.innerHTML = data.positions.map(p => `
-                    <div class="trade-row">
-                        <div class="text-xs font-black text-white uppercase">${p.symbol}</div>
-                        <div class="mono text-[10px] text-gray-600">#${p.ticket}</div>
-                        <div class="mono text-[10px] text-gray-400">${p.volume}L</div>
-                        <div class="text-right font-black mono ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}</div>
+                list.innerHTML = data.positions.map(p => {
+                    const isTrailing = (p.type === 'BUY' && p.sl > p.price_open) || (p.type === 'SELL' && p.sl > 0 && p.sl < p.price_open);
+                    return `
+                    <div class="trade-row flex flex-col gap-1 p-3 bg-white/[0.02] border border-white/5 rounded mb-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${p.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">${p.type}</span>
+                                <span class="text-[11px] font-black text-white uppercase tracking-tight">${p.symbol}</span>
+                                ${isTrailing ? '<span class="text-[8px] font-black bg-blue-500/20 text-blue-400 px-1 rounded animate-pulse">TRAILING</span>' : ''}
+                            </div>
+                            <div class="text-right font-black mono text-[11px] ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}</div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mt-2 border-t border-white/5 pt-2">
+                            <div>
+                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">Open</span>
+                                <span class="mono text-[10px] text-gray-300">${p.price_open.toFixed(5)}</span>
+                            </div>
+                            <div>
+                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">SL</span>
+                                <span class="mono text-[10px] ${p.sl > 0 ? 'text-red-400' : 'text-gray-700'}">${p.sl > 0 ? p.sl.toFixed(5) : '0.000'}</span>
+                            </div>
+                            <div>
+                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">TP</span>
+                                <span class="mono text-[10px] ${p.tp > 0 ? 'text-emerald-400' : 'text-gray-700'}">${p.tp > 0 ? p.tp.toFixed(5) : '0.000'}</span>
+                            </div>
+                            <div>
+                                <span class="text-[8px] text-gray-600 uppercase block leading-none mb-1">Lots</span>
+                                <span class="mono text-[10px] text-gray-500">${p.volume}</span>
+                            </div>
+                        </div>
+                        <div class="text-[8px] text-gray-800 mono mt-1">ID: #${p.ticket}</div>
                     </div>
-                `).join('');
+                `;}).join('');
 
                 // Events & News
                 const eventsPanel = document.getElementById('events-stream');
@@ -428,10 +463,38 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
                     <div class="p-6 bg-white/[0.02] border border-white/5 rounded">
-                        <p class="text-xs text-gray-400 italic font-medium leading-relaxed">"${data.ai_text}"</p>
+                        <p class="text-xs text-gray-400 italic font-medium leading-relaxed mb-6">"${data.ai_text}"</p>
+                        <button onclick="triggerDemo('${sym}')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] py-3 uppercase tracking-widest transition-all">Trigger Neural Execution [DEMO]</button>
                     </div>
                 `;
             } catch (err) { console.error(err); }
+        }
+
+        async function triggerDemo(sym) {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "EXECUTING...";
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/trigger_demo/' + sym);
+                const data = await res.json();
+                if(data.success) {
+                    btn.innerText = "SUCCESS: " + data.message;
+                    btn.className = "w-full bg-emerald-500 text-white font-bold text-[10px] py-3 uppercase tracking-widest";
+                } else {
+                    btn.innerText = "FAILED: " + data.error;
+                    btn.className = "w-full bg-red-600 text-white font-bold text-[10px] py-3 uppercase tracking-widest";
+                }
+            } catch (e) { 
+                btn.innerText = "ERROR";
+            } finally {
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] py-3 uppercase tracking-widest";
+                }, 3000);
+            }
         }
 
         setInterval(updateHUD, 300);
@@ -496,7 +559,16 @@ def get_data():
         res = mt5.positions_get()
         if res:
             for p in res:
-                positions.append({"ticket": p.ticket, "symbol": p.symbol, "volume": p.volume, "profit": round(p.profit, 2)})
+                positions.append({
+                    "ticket": p.ticket, 
+                    "symbol": p.symbol, 
+                    "volume": p.volume, 
+                    "profit": round(p.profit, 2),
+                    "price_open": p.price_open,
+                    "sl": p.sl,
+                    "tp": p.tp,
+                    "type": "BUY" if p.type == 0 else "SELL"
+                })
 
     global EVENTS_CACHE
     if time.time() - EVENTS_CACHE["last_fetch"] < 300:
@@ -606,6 +678,56 @@ def api_chat():
         resp = "Neural engine processing query. Recommendation: Maintain strict risk management and monitor institutional strength."
         
     return jsonify({"response": resp})
+
+@app.route('/api/trigger_demo/<symbol>')
+def trigger_demo(symbol):
+    if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
+    
+    from src.engines.synergy_engine import SynergyEngine
+    from src.executor import TradeExecutor
+    from src.mt5_connection import MT5Client
+    
+    exact_sym = MT5Client.resolve_symbol(symbol)
+    if not mt5.initialize(): return jsonify({"error": "MT5 offline"}), 500
+    
+    # 1. Get Market Data
+    df = MT5Client.get_market_data(exact_sym, Config.TIMEFRAME)
+    if df.empty: return jsonify({"error": "No market data"}), 400
+    
+    # 2. Run Synergy Engine
+    synergy = SynergyEngine()
+    analysis = synergy.analyze(exact_sym, df)
+    
+    # 3. Forced Test Execution with Broker-Safe Stops
+    tick = mt5.symbol_info_tick(exact_sym)
+    if not tick: return jsonify({"error": "Price feed error"}), 500
+    
+    symbol_info = mt5.symbol_info(exact_sym)
+    if not symbol_info: return jsonify({"error": "Symbol info unavailable"}), 500
+    
+    point = symbol_info.point
+    # Use 1000 points for SL and 2000 points for TP to ensure we bypass 'Stop Levels'
+    sl_dist = 1000 * point
+    tp_dist = 2000 * point
+    
+    price = tick.ask if analysis['direction'] == 'BUY' else tick.bid
+    sl = price - sl_dist if analysis['direction'] == 'BUY' else price + sl_dist
+    tp = price + tp_dist if analysis['direction'] == 'BUY' else price - tp_dist
+    
+    success, msg = TradeExecutor.open_position(
+        exact_sym, 
+        analysis['direction'], 
+        0.01, 
+        sl, 
+        tp, 
+        reason=f"Finter Neural Demo Trigger ({analysis['alpha']}% Alpha)",
+        criteria="Manual Neural Override"
+    )
+    
+    if success:
+        return jsonify({"success": True, "message": msg})
+    else:
+        return jsonify({"success": False, "error": msg})
 
 @app.route('/api/scan/<symbol>')
 def scan_symbol(symbol):

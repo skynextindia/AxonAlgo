@@ -79,7 +79,7 @@ def main():
                                 sl = df['close'].iloc[-1] - sl_dist if analysis['direction'] == "BUY" else df['close'].iloc[-1] + sl_dist
                                 tp = df['close'].iloc[-1] + (sl_dist * 2) if analysis['direction'] == "BUY" else df['close'].iloc[-1] - (sl_dist * 2)
                                 
-                                success = TradeExecutor.open_position(
+                                success, msg = TradeExecutor.open_position(
                                     symbol, analysis['direction'], 0.01, # Standard Micro for testing
                                     sl, tp,
                                     reason=analysis['reason'], 
