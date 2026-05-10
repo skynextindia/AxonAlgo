@@ -53,3 +53,30 @@ class SREngine:
         
         # Sort by strength (most touches)
         return sorted(zones, key=lambda x: x['strength'], reverse=True)
+
+    def get_fvgs(self, df):
+        """
+        Detects Fair Value Gaps (Imbalances) where price skipped levels.
+        Commonly used in Smart Money Concepts (SMC).
+        """
+        fvgs = []
+        if len(df) < 3: return fvgs
+        
+        for i in range(2, len(df)):
+            # Bullish FVG (Gap between Bar 1 High and Bar 3 Low)
+            if df.iloc[i-2]['high'] < df.iloc[i]['low']:
+                fvgs.append({
+                    'min': df.iloc[i-2]['high'],
+                    'max': df.iloc[i]['low'],
+                    'mid': (df.iloc[i-2]['high'] + df.iloc[i]['low']) / 2,
+                    'type': 'BULLISH'
+                })
+            # Bearish FVG (Gap between Bar 1 Low and Bar 3 High)
+            elif df.iloc[i-2]['low'] > df.iloc[i]['high']:
+                fvgs.append({
+                    'min': df.iloc[i]['high'],
+                    'max': df.iloc[i-2]['low'],
+                    'mid': (df.iloc[i-2]['low'] + df.iloc[i]['high']) / 2,
+                    'type': 'BEARISH'
+                })
+        return fvgs

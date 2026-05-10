@@ -65,3 +65,47 @@ class TradeExecutor:
         except Exception as e:
             logger.error(f"Trailing Update Failed: {e}")
             return False
+
+    @staticmethod
+    def close_partial(ticket, symbol, lots):
+        """Closes a portion of a position (e.g. 50% at TP1)."""
+        try:
+            position = mt5.positions_get(ticket=ticket)
+            if not position: return False
+            
+            order_type = mt5.ORDER_TYPE_SELL if position[0].type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_BUY
+            price = mt5.symbol_info_tick(symbol).bid if order_type == mt5.ORDER_TYPE_SELL else mt5.symbol_info_tick(symbol).ask
+            
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "position": ticket,
+                "symbol": symbol,
+                "volume": float(lots),
+                "type": order_type,
+                "price": price,
+                "magic": 123456,
+                "comment": "Partial TP",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
+            result = mt5.order_send(request)
+            return result.retcode == mt5.TRADE_RETCODE_DONE
+        except Exception as e:
+            logger.error(f"Partial Close Error: {e}")
+            return False
+
+    @staticmethod
+    def modify_position(ticket, sl, tp):
+        """Modifies both SL and TP for an existing position."""
+        try:
+            request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "position": ticket,
+                "sl": float(sl),
+                "tp": float(tp),
+            }
+            result = mt5.order_send(request)
+            return result.retcode == mt5.TRADE_RETCODE_DONE
+        except Exception as e:
+            logger.error(f"Modify Position Error: {e}")
+            return False
