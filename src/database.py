@@ -29,9 +29,32 @@ class TradingDatabase:
                         pnl REAL DEFAULT 0.0
                     )
                 """)
+                # System settings table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS settings (
+                        id INTEGER PRIMARY KEY,
+                        risk_pct REAL,
+                        trading_enabled INTEGER,
+                        symbols TEXT
+                    )
+                """)
+                # Initialize default settings if empty
+                cursor.execute("SELECT count(*) FROM settings")
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute("INSERT INTO settings (id, risk_pct, trading_enabled, symbols) VALUES (1, 1.0, 0, 'XAUUSDm,EURUSDm,GBPJPYm')")
                 conn.commit()
         except Exception as e:
             logger.error(f"Database Initialization Failed: {e}")
+
+    def get_system_settings(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            return conn.execute("SELECT * FROM settings WHERE id = 1").fetchone()
+
+    def update_system_settings(self, risk, enabled, symbols):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("UPDATE settings SET risk_pct = ?, trading_enabled = ?, symbols = ? WHERE id = 1",
+                        (risk, 1 if enabled else 0, symbols))
 
     def log_trade(self, symbol, trade_type, lots, entry, sl, tp):
         """Records a new open trade."""

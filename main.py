@@ -46,6 +46,12 @@ def main():
 
     try:
         while True:
+            # DYNAMIC SYNC: Refresh settings from Database
+            sys_settings = db.get_system_settings()
+            Config.SYMBOLS = sys_settings['symbols'].split(',')
+            Config.RISK_PER_TRADE = sys_settings['risk_pct'] / 100
+            Config.TRADING_ENABLED = bool(sys_settings['trading_enabled'])
+
             for symbol in Config.SYMBOLS:
                 try:
                     logger.info(f"Scanning {symbol}...")
