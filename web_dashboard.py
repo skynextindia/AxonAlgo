@@ -303,8 +303,8 @@ def update_settings():
 def add_symbol():
     if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
-    syms = settings['symbols'].split(',')
-    new_sym = request.form['symbol'].strip()
+    syms = [s.strip().upper() for s in settings['symbols'].split(',') if s.strip()]
+    new_sym = request.form['symbol'].strip().upper()
     if new_sym and new_sym not in syms:
         syms.append(new_sym)
         db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
