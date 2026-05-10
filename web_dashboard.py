@@ -214,6 +214,9 @@ HTML_TEMPLATE = """
         setInterval(() => {
             document.getElementById('clock').textContent = new Date().toISOString().split('T')[1].split('.')[0] + ' UTC';
         }, 1000);
+        
+        // Initial boot
+        updateDashboard();
     </script>
 </body>
 </html>
