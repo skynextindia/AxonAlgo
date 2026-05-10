@@ -9,32 +9,39 @@ from src.engines.filter_engine import FilterEngine
 from src.engines.candle_engine import CandleEngine
 from src.executor import TradeExecutor
 from src.database import TradingDatabase
+from src.notifier import TelegramNotifier
 import MetaTrader5 as mt5
+from logging.handlers import RotatingFileHandler
 from tabulate import tabulate
 
 db = TradingDatabase()
+notifier = TelegramNotifier()
 
-# Professional Logging Configuration
+# Professional Logging with Rotation (Max 5MB per file, keep 3 backups)
+log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+log_handler = RotatingFileHandler("axon_bot.log", maxBytes=5*1024*1024, backupCount=3)
+log_handler.setFormatter(log_formatter)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[
-        logging.FileHandler("axon_bot.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[log_handler, logging.StreamHandler()]
 )
 logger = logging.getLogger("AxonBot")
 
 def main():
     logger.info("--- AXON TRADING BOT INITIALIZING ---")
+    notifier.send_message("🚀 *AxonAlgo Bot Starting Up*...\nInitializing connection to MT5.")
     
     if not MT5Client.connect():
         logger.critical("Could not connect to MT5. Exiting.")
+        notifier.send_message("❌ *CRITICAL ERROR*: Could not connect to MT5.")
         return
 
     sr = SREngine(zone_threshold_pips=Config.ZONE_THRESHOLD)
     breakout = BreakoutEngine()
     risk = RiskEngine(risk_per_trade=Config.RISK_PER_TRADE, min_rr=Config.MIN_RR)
+    
+    last_status_report = time.time()
 
     try:
         while True:
@@ -49,7 +56,13 @@ def main():
                     time.sleep(10)
                     continue
 
-                # 2. PRO FEATURE: Manage Active Trades (Trailing Stop)
+                # 2. Periodic Status Report (Every 6 hours)
+                if time.time() - last_status_report > 21600:
+                    metrics = db.get_metrics()
+                    notifier.send_status_report(account_info.balance, metrics['win_rate'], metrics['total_pnl'])
+                    last_status_report = time.time()
+
+                # 3. PRO FEATURE: Manage Active Trades (Trailing Stop)
                 positions = mt5.positions_get(symbol=Config.SYMBOL)
                 if positions:
                     for pos in positions:
@@ -58,16 +71,12 @@ def main():
                             if new_sl:
                                 TradeExecutor.update_sl(pos.ticket, new_sl)
 
-                # 3. PRO FEATURE: Market Safety Filter (Spread/Session)
+                # 4. PRO FEATURE: Market Safety Filter (Spread/Session)
                 is_safe, reason = FilterEngine.is_market_safe(symbol_info)
                 
-                # 4. Analysis & Execution
+                # 5. Analysis & Execution
                 zones = sr.get_zones(df)
                 signal = breakout.check_breakout(df, zones)
-                current_price = df.iloc[-1]['close']
-                metrics = db.get_metrics()
-                
-                logger.info(f"[{Config.SYMBOL}] Price: {current_price} | WinRate: {metrics['win_rate']}% | PNL: {metrics['total_pnl']}")
                 
                 if signal:
                     if not is_safe:

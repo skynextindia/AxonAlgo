@@ -21,3 +21,5 @@ class Config:
     TRAILING_STOP_PIPS = float(os.getenv("TRAILING_STOP_PIPS", 20))
     HTF_TIMEFRAME = mt5.TIMEFRAME_H4
     TREND_EMA = 200
+    TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
