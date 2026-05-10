@@ -1,8 +1,8 @@
-from datetime import datetime
-import pytz
 from src.config import Config
+from src.engines.news_engine import NewsEngine
 
 class FilterEngine:
+    news_engine = NewsEngine(buffer_minutes=60)
     @staticmethod
     def is_market_safe(symbol_info):
         """
@@ -22,6 +22,11 @@ class FilterEngine:
         current_hour_utc = datetime.now(pytz.utc).hour
         if not (Config.SESSION_START <= current_hour_utc <= Config.SESSION_END):
             return False, f"Off-Session (UTC Hour: {current_hour_utc})"
+
+        # 3. News Filter (Protects against high-impact volatility)
+        is_volatile, event_name = self.news_engine.is_volatile_now(symbol_info.name)
+        if is_volatile:
+            return False, f"High Impact News: {event_name}"
 
         return True, "Conditions Optimal"
 
