@@ -88,6 +88,8 @@ def main():
                     signal = breakout.check_breakout(df, zones)
                     current_price = df.iloc[-1]['close']
                     
+                    logger.info(f"[{symbol}] Price: {current_price} | Zones Found: {len(zones)}")
+                    
                     if signal:
                         # 5. Confirmation Layers (Trend + Candle + FVG Alignment)
                         htf_df = MT5Client.get_market_data(symbol, Config.HTF_TIMEFRAME, count=300)
