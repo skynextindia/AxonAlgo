@@ -218,8 +218,12 @@ HTML_TEMPLATE = """
         }, 1000);
         
         // Initial boot
-        updateDashboard();
+        console.log("Axon Engine Booting...");
+        updateDashboard().then(() => {
+            console.log("Sync Active.");
+        });
     </script>
+    <div style="display:none">v2.0.1_STABLE</div>
 </body>
 </html>
 """
