@@ -1,4 +1,8 @@
 import MetaTrader5 as mt5
+from src.config import Config
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RiskEngine:
     def __init__(self, risk_per_trade=0.01, min_rr=1.5):

@@ -1,4 +1,5 @@
 import time
+import logging
 from src.config import Config
 from src.mt5_connection import MT5Client
 from src.engines.sr_engine import SREngine
@@ -10,10 +11,22 @@ from src.executor import TradeExecutor
 import MetaTrader5 as mt5
 from tabulate import tabulate
 
+# Professional Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.FileHandler("axon_bot.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("AxonBot")
+
 def main():
-    print("--- AXON TRADING BOT INITIALIZING ---")
+    logger.info("--- AXON TRADING BOT INITIALIZING ---")
     
     if not MT5Client.connect():
+        logger.critical("Could not connect to MT5. Exiting.")
         return
 
     sr = SREngine(zone_threshold_pips=Config.ZONE_THRESHOLD)
@@ -22,12 +35,17 @@ def main():
 
     try:
         while True:
-            # 1. Refresh Account & Symbol Data
-            df = MT5Client.get_market_data(Config.SYMBOL, Config.TIMEFRAME)
-            symbol_info = mt5.symbol_info(Config.SYMBOL)
-            account_info = mt5.account_info()
-            
-            if not df.empty and symbol_info and account_info:
+            try:
+                # 1. Refresh Account & Symbol Data
+                df = MT5Client.get_market_data(Config.SYMBOL, Config.TIMEFRAME)
+                symbol_info = mt5.symbol_info(Config.SYMBOL)
+                account_info = mt5.account_info()
+                
+                if df.empty or not symbol_info or not account_info:
+                    logger.warning("Waiting for market data/connection...")
+                    time.sleep(10)
+                    continue
+
                 # 2. PRO FEATURE: Manage Active Trades (Trailing Stop)
                 positions = mt5.positions_get(symbol=Config.SYMBOL)
                 if positions:
@@ -45,54 +63,52 @@ def main():
                 signal = breakout.check_breakout(df, zones)
                 current_price = df.iloc[-1]['close']
                 
-                # 5. PRO FEATURE: MTF Trend Confirmation (H4)
-                htf_df = MT5Client.get_market_data(Config.SYMBOL, Config.HTF_TIMEFRAME, count=300)
-                trend_ok = True
-                trend_reason = ""
-                
-                print(f"\n[{Config.SYMBOL}] Price: {current_price} | Session: {'OPEN' if is_safe else 'CLOSED'} | Safe: {is_safe}")
+                logger.info(f"[{Config.SYMBOL}] Price: {current_price} | Session: {'OPEN' if is_safe else 'CLOSED'}")
                 
                 if signal:
-                    trend_ok, trend_reason = FilterEngine.check_trend_confirmation(htf_df, signal['type'])
-                    
                     if not is_safe:
-                        print(f"!!! SIGNAL BLOCKED: {reason}")
-                    elif not trend_ok:
-                        print(f"!!! SIGNAL BLOCKED: {trend_reason}")
+                        logger.warning(f"SIGNAL BLOCKED: {reason}")
                     else:
-                        # 6. PRO FEATURE: Candle Confirmation
-                        if not CandleEngine.is_confirmed(df, signal['type']):
-                            print(f"!!! SIGNAL BLOCKED: No Candle Confirmation (Waiting for Engulfing/Hammer)")
+                        # 5. PRO FEATURE: MTF Trend Confirmation (H4)
+                        htf_df = MT5Client.get_market_data(Config.SYMBOL, Config.HTF_TIMEFRAME, count=300)
+                        trend_ok, trend_reason = FilterEngine.check_trend_confirmation(htf_df, signal['type'])
+                        
+                        if not trend_ok:
+                            logger.warning(f"SIGNAL BLOCKED: {trend_reason}")
+                        elif not CandleEngine.is_confirmed(df, signal['type']):
+                            logger.info("SIGNAL BLOCKED: Waiting for Candle Confirmation (Engulfing/Hammer)")
                         else:
                             # Calculate Risk Parameters
                             trade_params = risk.calculate_trade_params(account_info.balance, symbol_info, signal, zones)
-                        
-                        if trade_params['valid']:
-                            print(f"!!! TRADE SIGNAL VALIDATED !!!")
-                            print(f"Type: {signal['type']} | Lots: {trade_params['lots']} | RR: {trade_params['rr']}")
                             
-                            if Config.TRADING_ENABLED:
-                                TradeExecutor.open_position(
-                                    Config.SYMBOL, 
-                                    signal['type'], 
-                                    trade_params['lots'], 
-                                    trade_params['sl'], 
-                                    trade_params['tp']
-                                )
-                                print("Order submitted. Waiting for next cycle...")
-                                time.sleep(300) 
+                            if trade_params['valid']:
+                                logger.info(f"!!! TRADE SIGNAL VALIDATED: {signal['type']} !!!")
+                                
+                                if Config.TRADING_ENABLED:
+                                    TradeExecutor.open_position(
+                                        Config.SYMBOL, 
+                                        signal['type'], 
+                                        trade_params['lots'], 
+                                        trade_params['sl'], 
+                                        trade_params['tp']
+                                    )
+                                    time.sleep(300) 
+                                else:
+                                    logger.info(f"DRY RUN: Lots={trade_params['lots']} SL={trade_params['sl']} TP={trade_params['tp']}")
                             else:
-                                print("TRADING DISABLED in Config. Signal logged only.")
-                        else:
-                            print(f"Signal ignored: RR too low ({trade_params['rr']}) or lot size invalid.")
-                else:
-                    status_msg = "Scanning..." if is_safe else f"Paused ({reason})"
-                    print(f"Status: {status_msg} (Zones: {len(zones)})")
-            
+                                logger.info(f"Trade invalid: RR={trade_params['rr']} (Min={Config.MIN_RR})")
+                
+            except Exception as loop_error:
+                logger.error(f"Unexpected error in trading loop: {loop_error}")
+                time.sleep(5)
+                
             time.sleep(60) 
             
     except KeyboardInterrupt:
-        print("Bot stopped by user.")
+        logger.info("Bot stopped by user.")
+    finally:
+        mt5.shutdown()
+        logger.info("MT5 Connection Closed.")
 
 if __name__ == "__main__":
     main()
