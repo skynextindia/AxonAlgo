@@ -1,3 +1,5 @@
+from datetime import datetime
+import pytz
 from src.config import Config
 from src.engines.news_engine import NewsEngine
 
@@ -24,7 +26,7 @@ class FilterEngine:
             return False, f"Off-Session (UTC Hour: {current_hour_utc})"
 
         # 3. News Filter (Protects against high-impact volatility)
-        is_volatile, event_name = self.news_engine.is_volatile_now(symbol_info.name)
+        is_volatile, event_name = FilterEngine.news_engine.is_volatile_now(symbol_info.name)
         if is_volatile:
             return False, f"High Impact News: {event_name}"
 
