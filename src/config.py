@@ -23,7 +23,7 @@ class Config:
     TREND_EMA = 200
     TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-    SYMBOLS = ["XAUUSD", "EURUSD", "GBPJPY"]
+    SYMBOLS = ["XAUUSDm", "EURUSDm", "GBPJPYm"]
     PARTIAL_TP_RR = 1.0
     BREAK_EVEN_RR = 1.1
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "axon_admin")
