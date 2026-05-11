@@ -7,15 +7,29 @@ db = TradingDatabase()
 
 class TradeExecutor:
     @staticmethod
+    def get_filling_mode(symbol):
+        """Detects the correct filling mode for the broker symbol."""
+        sym_info = mt5.symbol_info(symbol)
+        if not sym_info: return mt5.ORDER_FILLING_IOC
+        
+        # Bits: 1 = FOK, 2 = IOC
+        filling = sym_info.filling_mode
+        if filling & 1: # SYMBOL_FILLING_FOK
+            return mt5.ORDER_FILLING_FOK
+        elif filling & 2: # SYMBOL_FILLING_IOC
+            return mt5.ORDER_FILLING_IOC
+        else:
+            return mt5.ORDER_FILLING_RETURN
+
+    @staticmethod
     def open_position(symbol, signal_type, lots, sl, tp, reason="", criteria=""):
-        """Sends an execution request to MT5 with execution reasoning."""
+        """Sends an execution request to MT5 with dynamic filling and safety TP/SL."""
         try:
             order_type = mt5.ORDER_TYPE_BUY if signal_type in ["BULLISH_BREAKOUT", "BUY"] else mt5.ORDER_TYPE_SELL
             tick = mt5.symbol_info_tick(symbol)
-            if tick is None:
-                logger.error(f"Could not get tick info for {symbol}")
-                return False
+            if tick is None: return False, "No Price Feed"
                 
+            filling_mode = TradeExecutor.get_filling_mode(symbol)
             price = tick.ask if order_type == mt5.ORDER_TYPE_BUY else tick.bid
             
             request = {
@@ -27,19 +41,25 @@ class TradeExecutor:
                 "sl": float(sl),
                 "tp": float(tp),
                 "magic": 123456,
-                "comment": "Axon Intelligence",
+                "comment": "Finter Neural",
                 "type_time": mt5.ORDER_TIME_GTC,
-                "type_filling": mt5.ORDER_FILLING_IOC,
+                "type_filling": filling_mode,
             }
 
             result = mt5.order_send(request)
+            
+            if result.retcode != mt5.TRADE_RETCODE_DONE:
+                # If failed due to filling, try RETURN mode
+                if result.retcode in [mt5.TRADE_RETCODE_INVALID_FILL]:
+                    request["type_filling"] = mt5.ORDER_FILLING_RETURN
+                    result = mt5.order_send(request)
             
             if result.retcode != mt5.TRADE_RETCODE_DONE:
                 err_msg = f"{result.comment} (Code: {result.retcode})"
                 logger.error(f"ORDER FAILED: {err_msg}")
                 return False, err_msg
             
-            logger.info(f"ORDER SUCCESS: {signal_type} @ {result.price} | Lots: {lots}")
+            # Record to Local Database
             db.log_trade(symbol, signal_type, lots, result.price, sl, tp, reason, criteria)
             return True, f"Executed at {result.price}"
         except Exception as e:

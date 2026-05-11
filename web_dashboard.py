@@ -295,54 +295,24 @@ HTML_TEMPLATE = """
                 // Trades
                 const list = document.getElementById('positions-list');
                 document.getElementById('pos-count').textContent = data.positions.length + '_ACTIVE';
-                list.innerHTML = data.positions.map(p => {
-                    const isTrailing = (p.type === 'BUY' && p.sl > p.price_open) || (p.type === 'SELL' && p.sl > 0 && p.sl < p.price_open);
-                    
-                    // Estimate potential PnL based on current profit/price ratio
-                    let currentDist = Math.abs(data.live_data.find(s => s.symbol === p.symbol)?.price - p.price_open) || 0.0001;
-                    let pipsPerDollar = p.profit / currentDist;
-                    let estProfit = Math.abs(p.tp - p.price_open) * Math.abs(pipsPerDollar);
-                    let estLoss = Math.abs(p.sl - p.price_open) * Math.abs(pipsPerDollar);
-
-                    return `
-                    <div class="p-2 mb-2 bg-white/[0.02] border border-white/5 rounded hover:border-white/10 transition-colors">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-[8px] font-black px-1 rounded ${p.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">${p.type}</span>
-                                    <span class="text-[10px] font-black text-white tracking-tighter">${p.symbol}</span>
-                                    ${isTrailing ? '<span class="text-[7px] font-black text-blue-400">TRL</span>' : ''}
-                                </div>
-                                <span class="text-[8px] text-gray-700 mono">#${p.ticket} | ${p.volume}L</span>
+                list.innerHTML = data.positions.map(p => `
+                    <div class="p-2 mb-1 bg-white/[0.02] border border-white/5 rounded flex flex-col gap-1">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[8px] font-black px-1 rounded ${p.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">${p.type}</span>
+                                <span class="text-[10px] font-black text-white uppercase">${p.symbol}</span>
                             </div>
-                            <div class="text-right">
-                                <div class="text-[11px] font-black mono ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'} animate-pulse">
-                                    ${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}
-                                </div>
+                            <div class="text-[11px] font-black mono ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">
+                                ${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-3 gap-1 border-t border-white/5 pt-2">
-                            <div class="text-center">
-                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Entry</div>
-                                <div class="text-[9px] text-gray-400 mono">${p.price_open.toFixed(5)}</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Exp. TP</div>
-                                <div class="text-[9px] text-emerald-500/80 mono">+${estProfit.toFixed(1)}</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-[7px] text-gray-600 uppercase mb-0.5">Exp. SL</div>
-                                <div class="text-[9px] text-red-500/80 mono">-${estLoss.toFixed(1)}</div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between mt-1 text-[8px] mono text-gray-800">
+                        <div class="flex justify-between items-center text-[8px] mono text-gray-600">
+                            <span>ENTRY: ${p.price_open.toFixed(5)}</span>
                             <span>SL: ${p.sl > 0 ? p.sl.toFixed(5) : 'NONE'}</span>
                             <span>TP: ${p.tp > 0 ? p.tp.toFixed(5) : 'NONE'}</span>
                         </div>
                     </div>
-                `;}).join('');
+                `).join('');
 
                 // Events & News
                 const eventsPanel = document.getElementById('events-stream');
