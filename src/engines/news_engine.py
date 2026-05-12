@@ -17,6 +17,10 @@ class NewsEngine:
         Fetches High-Impact news events for the currencies associated with the symbol.
         """
         try:
+            # Check if MT5 version supports calendar
+            if not hasattr(mt5, 'calendar_events_get'):
+                return []
+
             # 1. Determine relevant currencies (e.g., XAUUSD -> USD)
             currencies = self._get_symbol_currencies(symbol)
             
@@ -38,7 +42,7 @@ class NewsEngine:
             
             return all_events
         except Exception as e:
-            logger.error(f"Failed to fetch calendar: {e}")
+            # Silently fail if calendar is not supported by broker
             return []
  
     def is_volatile_now(self, symbol):

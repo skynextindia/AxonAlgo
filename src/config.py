@@ -9,7 +9,7 @@ class Config:
     PASSWORD = os.getenv("MT5_PASSWORD", "")
     SERVER = os.getenv("MT5_SERVER", "")
     SYMBOL = os.getenv("SYMBOL", "GOLD")
-    TIMEFRAME = mt5.TIMEFRAME_H1 # Default
+    TIMEFRAME = mt5.TIMEFRAME_M15 # Primary Scalp/Execution TF
     ZONE_THRESHOLD = float(os.getenv("ZONE_THRESHOLD_PIPS", 15))
     RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", 0.01))
     MIN_RR = float(os.getenv("MIN_RR", 1.5))
@@ -23,7 +23,7 @@ class Config:
     TREND_EMA = 200
     TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-    SYMBOLS = ["XAUUSDm", "EURUSDm", "GBPJPYm"]
+    SYMBOLS = ["XAUUSDm", "EURUSDm", "GBPJPYm", "BTCUSDm"]
     PARTIAL_TP_RR = 1.0
     BREAK_EVEN_RR = 1.1
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "axon_admin")

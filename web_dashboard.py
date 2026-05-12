@@ -1,4 +1,5 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify, Response
+import json
 from src.config import Config
 from src.database import TradingDatabase
 from src.mt5_connection import MT5Client
@@ -9,6 +10,7 @@ import sqlite3
 import datetime
 import urllib.request
 import xml.etree.ElementTree as ET
+import threading
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -77,6 +79,35 @@ HTML_TEMPLATE = """
         .ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); }
         .ticker-item { background: var(--bg); padding: 1rem; transition: 0.1s; position: relative; }
         .ticker-item:hover { background: #0a0a0a; }
+        /* Living UI Animations */
+        @keyframes pulse-blue {
+            0% { text-shadow: 0 0 5px rgba(59,130,246,0.2); opacity: 0.8; }
+            50% { text-shadow: 0 0 15px rgba(59,130,246,0.6); opacity: 1; }
+            100% { text-shadow: 0 0 5px rgba(59,130,246,0.2); opacity: 0.8; }
+        }
+        .pulse-status { animation: pulse-blue 2s infinite ease-in-out; }
+        
+        @keyframes grid-glow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        body {
+            background: radial-gradient(circle at 50% 50%, #050505 0%, #000000 100%);
+            overflow-x: hidden; height: 100vh; margin: 0; display: flex;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent 48%, rgba(59,130,246,0.02) 50%, transparent 52%);
+            background-size: 200% 200%;
+            animation: grid-glow 15s infinite linear;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-weight: 800; letter-spacing: -0.05em; }
         .price-val { font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 700; margin-top: 0.5rem; }
         .remove-btn { position: absolute; top: 4px; right: 4px; font-size: 10px; color: #333; opacity: 0; }
         .ticker-item:hover .remove-btn { opacity: 1; }
@@ -99,6 +130,15 @@ HTML_TEMPLATE = """
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+
+        .led-pulse {
+            animation: led-blink 1s infinite;
+        }
+        @keyframes led-blink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -113,7 +153,11 @@ HTML_TEMPLATE = """
         <header>
             <div class="stat"><div class="stat-label">Equity</div><div id="acc-equity" class="stat-value">$0.00</div></div>
             <div class="stat"><div class="stat-label">Net PnL</div><div id="acc-pnl" class="stat-value text-emerald-500">0.00</div></div>
-            <div class="stat"><div class="stat-label">Neural Status</div><div class="stat-value text-blue-500">ACTIVE_SCAN</div></div>
+            <div class="stat"><div class="stat-label">Neural Status</div><div id="bot-action" class="stat-value text-blue-500 pulse-status">INITIALIZING...</div></div>
+            <div class="stat"><div class="stat-label">Current Target</div><div id="bot-symbol" class="stat-value text-white">NONE</div></div>
+            <div class="flex items-center ml-4 h-full">
+                <canvas id="neural-wave" width="100" height="30" class="opacity-50"></canvas>
+            </div>
             <div class="ml-auto mono text-[10px] text-gray-700">NODE_ID: FINTER_01_SECURE</div>
         </header>
 
@@ -133,15 +177,108 @@ HTML_TEMPLATE = """
                 </div>
 
                 <div class="grid grid-cols-12 gap-6">
-                    <!-- TRADES -->
-                    <div class="col-span-8 panel">
-                        <div class="panel-header"><span class="panel-title">Live Execution Hub</span><span id="pos-count" class="mono text-[10px]">0_ACTIVE</span></div>
-                        <div id="positions-list" class="flex-1"></div>
-                    </div>
-                    <!-- EVENTS -->
+                    <!-- STRATEGY MATRIX -->
                     <div class="col-span-4 panel">
-                        <div class="panel-header"><span class="panel-title">Macro Events & Sentiment</span></div>
-                        <div id="events-stream" class="p-4 space-y-3 overflow-y-auto" style="height: 300px;"></div>
+                        <div class="panel-header"><span class="panel-title">Neural Strategy Alignment Matrix</span></div>
+                        <div id="strategy-matrix" class="p-4 grid grid-cols-3 gap-3">
+                            <!-- Layer 1 -->
+                            <div id="layer-L1_TREND" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-600 uppercase tracking-widest">L1: Daily Trend</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[13px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 2 -->
+                            <div id="layer-L2_STRUCTURE" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L2: SMC Zone</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 3 -->
+                            <div id="layer-L3_EMA" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L3: EMA 50</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 4 -->
+                            <div id="layer-L4_MOMENTUM" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L4: RSI Pullback</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 5 -->
+                            <div id="layer-L5_CANDLE" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L5: Candle Pattern</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 6 -->
+                            <div id="layer-L6_VOLATILITY" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L6: ATR Volatility</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 7 -->
+                            <div id="layer-L7_SPREAD" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L7: Spread</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 8 -->
+                            <div id="layer-L8_NEWS" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L8: News Filter</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                            <!-- Layer 9 -->
+                            <div id="layer-L9_RR" class="flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg opacity-40">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">L9: Risk/Reward</span>
+                                    <div class="dot w-2 h-2 rounded-full bg-gray-700"></div>
+                                </div>
+                                <div class="val text-[11px] font-black text-gray-700 mono tracking-tighter">---</div>
+                                <div class="status text-[8px] font-bold text-gray-800 uppercase mt-1">STATUS: PENDING</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- TRADES -->
+                    <div class="col-span-5 panel">
+                        <div class="panel-header"><span class="panel-title">Execution Hub</span><span id="pos-count" class="mono text-[10px]">0_ACTIVE</span></div>
+                        <div id="positions-list" class="flex-1 p-4 space-y-2"></div>
+                    </div>
+                    <!-- LOGS / EVENTS -->
+                    <div class="col-span-3 space-y-6">
+                        <div class="panel">
+                            <div class="panel-header"><span class="panel-title">Internal Planning</span></div>
+                            <div id="planning-log" class="p-4 space-y-3 overflow-y-auto" style="height: 120px;"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header"><span class="panel-title">Macro Sentiment</span></div>
+                            <div id="events-stream" class="p-4 space-y-3 overflow-y-auto" style="height: 150px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,8 +379,14 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        let selectedSymbol = 'BTCUSDm';
         let lastPrices = {};
-        
+
+        function selectSymbol(sym) {
+            selectedSymbol = sym;
+            updateHUD();
+        }
+
         async function updateHUD() {
             try {
                 const res = await fetch('/api/data');
@@ -254,43 +397,47 @@ HTML_TEMPLATE = """
                 document.getElementById('acc-pnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
                 document.getElementById('acc-pnl').className = `stat-value ${pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
-                // Ticker
+                // Ticker (Only if changed to prevent flicker)
                 const ticker = document.getElementById('ticker-grid');
-                ticker.innerHTML = data.live_data.map(s => {
+                const newTickerHTML = data.live_data.map(s => {
+                    let isScanning = (data.bot_status && data.bot_status.current_symbol === s.symbol);
+                    let isSelected = (selectedSymbol === s.symbol);
+                    let borderClass = isSelected ? 'border-2 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-t border-white/5';
+                    let bgClass = isSelected ? 'bg-blue-900/10' : 'bg-black';
                     let colorClass = 'text-white';
-                    let bgClass = 'bg-black hover:bg-[#0a0a0a]';
                     let priceDiff = '';
                     
                     if (lastPrices[s.symbol]) {
                         if (s.price > lastPrices[s.symbol]) {
                             colorClass = 'text-emerald-500';
-                            bgClass = 'bg-emerald-950/20 hover:bg-emerald-900/30 border-t border-emerald-500/20';
+                            bgClass = isSelected ? 'bg-emerald-900/20' : 'bg-emerald-950/20 hover:bg-emerald-900/30';
                             priceDiff = '▲';
                         } else if (s.price < lastPrices[s.symbol]) {
                             colorClass = 'text-red-500';
-                            bgClass = 'bg-red-950/20 hover:bg-red-900/30 border-t border-red-500/20';
+                            bgClass = isSelected ? 'bg-red-900/20' : 'bg-red-950/20 hover:bg-red-900/30';
                             priceDiff = '▼';
-                        } else {
-                            colorClass = 'text-white';
-                            bgClass = 'bg-black hover:bg-[#0a0a0a] border-t border-white/5';
                         }
                     }
                     lastPrices[s.symbol] = s.price;
                     
                     return `
-                    <div class="ticker-item ${bgClass}" onclick="openScan('${s.symbol}')">
+                    <div class="ticker-item ${bgClass} ${borderClass} cursor-pointer" onclick="selectSymbol('${s.symbol}')">
                         <a href="/remove_symbol/${s.symbol}" class="remove-btn" onclick="event.stopPropagation()">✕</a>
                         <div class="text-[10px] font-black text-gray-500 uppercase flex justify-between">
                             <span>${s.symbol}</span>
-                            <span class="${colorClass}">${priceDiff}</span>
+                            <span class="${colorClass}">${priceDiff} ${isScanning ? '● SCANNING' : ''}</span>
                         </div>
                         <div class="flex justify-between items-end mt-2">
                             <div class="price-val ${colorClass} m-0">${s.price.toFixed(5)}</div>
-                            <div class="text-[9px] font-bold ${s.day_change > 0 ? 'text-emerald-500' : s.day_change < 0 ? 'text-red-500' : 'text-gray-600'}">${s.day_change > 0 ? '+' : ''}${s.day_change}%</div>
+                            <div class="text-[9px] font-bold ${s.day_change > 0 ? 'text-emerald-500' : s.day_change < 0 ? 'text-red-500' : 'text-gray-600'}">${s.day_change}%</div>
                         </div>
                     </div>
                     `;
                 }).join('');
+                
+                if (ticker.innerHTML !== newTickerHTML) {
+                    ticker.innerHTML = newTickerHTML;
+                }
 
                 // Trades
                 const list = document.getElementById('positions-list');
@@ -376,6 +523,75 @@ HTML_TEMPLATE = """
                 }
                 if (data.finy_thought) {
                     document.getElementById('finy-thought-container').innerHTML = `"${data.finy_thought}"`;
+                }
+
+                // Bot Status & Strategy Alignment
+                if (data.bot_status) {
+                    const statusEl = document.getElementById('bot-action');
+                    statusEl.textContent = data.bot_status.current_action;
+                    document.getElementById('bot-symbol').textContent = data.bot_status.current_symbol;
+                    
+                    const planningEl = document.getElementById('planning-log');
+                    planningEl.innerHTML = `
+                        <div class="border-l-2 border-emerald-500 pl-3 py-1">
+                            <div class="text-[10px] text-white font-bold uppercase">${data.bot_status.current_action}</div>
+                            <div class="text-[11px] text-gray-400 mt-1">${data.bot_status.planning_notes}</div>
+                            <div class="text-[9px] text-gray-600 mt-1 mono">${data.bot_status.last_updated}</div>
+                        </div>
+                    `;
+
+                    // Update Strategy Matrix (Fine-grained to prevent flicker)
+                    if (data.bot_status.strategy_alignment) {
+                        try {
+                            const alignment = JSON.parse(data.bot_status.strategy_alignment);
+                            const indicators = data.bot_status.current_indicators ? JSON.parse(data.bot_status.current_indicators) : {};
+                            const isSelectedScanning = (selectedSymbol.toLowerCase() === data.bot_status.current_symbol.toLowerCase());
+                            
+                            const layerMap = {
+                                "L1_TREND": "TREND",
+                                "L2_STRUCTURE": "SMC",
+                                "L3_EMA": "EMA",
+                                "L4_MOMENTUM": "RSI",
+                                "L5_CANDLE": "PA",
+                                "L6_VOLATILITY": "ATR",
+                                "L7_SPREAD": "SPREAD",
+                                "L8_NEWS": "NEWS",
+                                "L9_RR": "RR"
+                            };
+                            
+                            for (let [layerId, indKey] of Object.entries(layerMap)) {
+                                const el = document.getElementById(`layer-${layerId}`);
+                                if (!el) continue;
+                                
+                                const status = isSelectedScanning ? (alignment[layerId] || "PENDING") : "STALE";
+                                const dot = el.querySelector('.dot');
+                                const val = el.querySelector('.val');
+                                const statusTxt = el.querySelector('.status');
+                                
+                                // Update Visuals
+                                if (status === 'PASS') {
+                                    dot.className = 'dot w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]';
+                                    val.className = 'val text-[13px] font-black text-blue-400 mono tracking-tighter';
+                                    statusTxt.className = 'status text-[8px] font-bold text-emerald-600 uppercase mt-1';
+                                    el.className = 'flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg transition-all duration-300';
+                                } else if (status === 'FAIL') {
+                                    dot.className = 'dot w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]';
+                                    val.className = 'val text-[13px] font-black text-blue-400 mono tracking-tighter';
+                                    statusTxt.className = 'status text-[8px] font-bold text-red-900 uppercase mt-1';
+                                    el.className = 'flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg transition-all duration-300';
+                                } else {
+                                    dot.className = 'dot w-2 h-2 rounded-full bg-gray-700';
+                                    val.className = 'val text-[13px] font-black text-gray-700 mono tracking-tighter';
+                                    statusTxt.className = 'status text-[8px] font-bold text-gray-800 uppercase mt-1';
+                                    el.className = 'flex flex-col p-3 bg-white/[0.01] opacity-40 border border-white/10 rounded-lg';
+                                }
+
+                                const indVal = (isSelectedScanning && indKey && indicators[indKey]) ? indicators[indKey] : '---';
+                                if (val.textContent !== String(indVal)) val.textContent = indVal;
+                                if (statusTxt.textContent !== `STATUS: ${status}`) statusTxt.textContent = `STATUS: ${status}`;
+                            }
+                        } catch (e) { console.error("Alignment parse fail", e); }
+                    }
                 }
 
             } catch (e) { console.error("Sync_Fail", e); }
@@ -493,9 +709,275 @@ HTML_TEMPLATE = """
             } catch (e) { console.error(e); }
         }
 
-        setInterval(updateHUD, 300);
+        // SSE Real-Time Stream (Institutional Grade)
+        const source = new EventSource('/stream');
+        
+        source.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            processUpdate(data);
+        };
+
+        function processUpdate(data) {
+            try {
+                document.getElementById('acc-equity').textContent = '$' + data.account.equity.toLocaleString();
+                let pnl = data.positions.reduce((a, b) => a + b.profit, 0);
+                document.getElementById('acc-pnl').textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+                document.getElementById('acc-pnl').className = `stat-value ${pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+                // Bot Status Bar
+                document.getElementById('bot-action').textContent = data.bot_status.current_action;
+                document.getElementById('bot-symbol').textContent = data.bot_status.current_symbol;
+
+                // Ticker (Fine-Grained)
+                const tickerGrid = document.getElementById('ticker-grid');
+                data.live_data.forEach(s => {
+                    let item = document.getElementById(`ticker-item-${s.symbol}`);
+                    const botSym = (data.bot_status.current_symbol || "").trim().toLowerCase();
+                    const curSym = (s.symbol || "").trim().toLowerCase();
+                    const selSym = (selectedSymbol || "").trim().toLowerCase();
+                    
+                    let isScanning = (botSym === curSym && botSym !== "none" && botSym !== "");
+                    let isSelected = (selSym === curSym);
+                    
+                    if (!item) {
+                        // Create item if missing
+                        const div = document.createElement('div');
+                        div.id = `ticker-item-${s.symbol}`;
+                        div.onclick = () => selectSymbol(s.symbol);
+                        div.className = `ticker-item cursor-pointer bg-black border-t border-white/5`;
+                        div.innerHTML = `
+                            <a href="/remove_symbol/${s.symbol}" class="remove-btn" onclick="event.stopPropagation()">✕</a>
+                            <div class="text-[10px] font-black text-gray-500 uppercase flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <span>${s.symbol}</span>
+                                    <span id="ticker-change-${s.symbol}" class="text-[8px] font-bold">0.00%</span>
+                                </div>
+                                <div id="ticker-scan-${s.symbol}" class="w-1.5 h-1.5 rounded-full bg-gray-800"></div>
+                            </div>
+                            <div class="flex justify-between items-end mt-2">
+                                <div class="flex items-center gap-1">
+                                    <span id="ticker-arrow-${s.symbol}" class="text-[8px] w-2"></span>
+                                    <div id="ticker-price-${s.symbol}" class="price-val text-white m-0">0.00000</div>
+                                </div>
+                            </div>
+                        `;
+                        tickerGrid.appendChild(div);
+                        item = div;
+                    }
+
+                    // Update values
+                    const priceEl = document.getElementById(`ticker-price-${s.symbol}`);
+                    const changeEl = document.getElementById(`ticker-change-${s.symbol}`);
+                    const scanEl = document.getElementById(`ticker-scan-${s.symbol}`);
+                    const arrowEl = document.getElementById(`ticker-arrow-${s.symbol}`);
+                    
+                    let colorClass = 'text-white';
+                    let priceDiff = '';
+                    let dotColor = 'bg-gray-800';
+                    let bgClass = isSelected ? 'bg-blue-900/10' : 'bg-black';
+                    
+                    if (lastPrices[s.symbol]) {
+                        if (s.price > lastPrices[s.symbol]) { 
+                            colorClass = 'text-emerald-400'; 
+                            priceDiff = '▲'; 
+                            dotColor = isScanning ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-gray-800';
+                            bgClass = isSelected ? 'bg-emerald-900/30' : 'bg-emerald-950/20';
+                        }
+                        else if (s.price < lastPrices[s.symbol]) { 
+                            colorClass = 'text-red-400'; 
+                            priceDiff = '▼'; 
+                            dotColor = isScanning ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-gray-800';
+                            bgClass = isSelected ? 'bg-red-900/30' : 'bg-red-950/20';
+                        }
+                    } else if (isScanning) {
+                        dotColor = 'bg-blue-500 shadow-[0_0_5px_#3b82f6]';
+                    }
+                    lastPrices[s.symbol] = s.price;
+
+                    if (priceEl.textContent !== s.price.toFixed(5)) {
+                        priceEl.textContent = s.price.toFixed(5);
+                        priceEl.className = `price-val ${colorClass} m-0`;
+                    }
+                    if (arrowEl.textContent !== priceDiff) {
+                        arrowEl.textContent = priceDiff;
+                        arrowEl.className = `text-[8px] w-2 ${colorClass}`;
+                    }
+                    if (changeEl.textContent !== s.day_change + '%') {
+                        changeEl.textContent = s.day_change + '%';
+                        changeEl.className = `text-[8px] font-bold ${s.day_change > 0 ? 'text-emerald-500' : s.day_change < 0 ? 'text-red-500' : 'text-gray-600'}`;
+                    }
+                    
+                    const scanClass = `w-1.5 h-1.5 rounded-full ${dotColor} ${isScanning ? 'led-pulse' : ''}`;
+                    if (scanEl.className !== scanClass) {
+                        scanEl.className = scanClass;
+                    }
+
+                    // Highlight Selection & Directional BG
+                    let borderClass = isSelected ? 'border-2 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'border-t border-white/5';
+                    if (item.className !== `ticker-item cursor-pointer ${bgClass} ${borderClass}`) {
+                        item.className = `ticker-item cursor-pointer ${bgClass} ${borderClass}`;
+                    }
+                });
+
+                // Strategy Matrix (Persistent per Asset)
+                let targetStatus = null;
+                if (data.symbol_statuses) {
+                    const sel = (selectedSymbol || "").trim().toLowerCase();
+                    const key = Object.keys(data.symbol_statuses).find(k => k.toLowerCase() === sel);
+                    if (key) targetStatus = data.symbol_statuses[key];
+                }
+
+                if (targetStatus) {
+                    const alignment = JSON.parse(targetStatus.strategy_alignment || "{}");
+                    const indicators = targetStatus.current_indicators ? JSON.parse(targetStatus.current_indicators) : {};
+                    const botSym = (data.bot_status.current_symbol || "").trim().toLowerCase();
+                    const isScanning = (botSym === (selectedSymbol || "").toLowerCase());
+                    
+                    const layerMap = {
+                        "L1_TREND": "TREND", "L2_STRUCTURE": "SMC", "L3_EMA": "EMA",
+                        "L4_MOMENTUM": "RSI", "L5_CANDLE": "PA", "L6_VOLATILITY": "ATR",
+                        "L7_SPREAD": "SPREAD", "L8_NEWS": "NEWS", "L9_RR": "RR"
+                    };
+                    
+                    for (let [layerId, indKey] of Object.entries(layerMap)) {
+                        const el = document.getElementById(`layer-${layerId}`);
+                        if (!el) continue;
+                        const status = alignment[layerId] || "PENDING";
+                        const dot = el.querySelector('.dot');
+                        const val = el.querySelector('.val');
+                        const statusTxt = el.querySelector('.status');
+                        
+                        if (status === 'PASS') {
+                            dot.className = 'dot w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]';
+                            val.className = 'val text-[13px] font-black text-blue-400 mono tracking-tighter';
+                            statusTxt.className = 'status text-[8px] font-bold text-emerald-600 uppercase mt-1';
+                            el.className = 'flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg transition-all duration-300';
+                        } else if (status === 'FAIL') {
+                            dot.className = 'dot w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]';
+                            val.className = 'val text-[13px] font-black text-blue-400 mono tracking-tighter';
+                            statusTxt.className = 'status text-[8px] font-bold text-red-900 uppercase mt-1';
+                            el.className = 'flex flex-col p-3 bg-white/[0.02] border border-white/10 rounded-lg transition-all duration-300';
+                        } else {
+                            dot.className = 'dot w-2 h-2 rounded-full bg-gray-700';
+                            val.className = 'val text-[13px] font-black text-gray-700 mono tracking-tighter';
+                            statusTxt.className = 'status text-[8px] font-bold text-gray-800 uppercase mt-1';
+                            el.className = 'flex flex-col p-3 bg-white/[0.01] opacity-40 border border-white/10 rounded-lg';
+                        }
+                        const indVal = (indKey && indicators[indKey]) ? indicators[indKey] : '---';
+                        if (val.textContent !== String(indVal)) val.textContent = indVal;
+                        if (statusTxt.textContent !== `STATUS: ${status}`) statusTxt.textContent = `STATUS: ${status}`;
+                    }
+                }
+
+                // Internal Planning (Only if changed)
+                const planningLog = document.getElementById('planning-log');
+                const logEntry = `
+                    <div class="flex flex-col gap-1 border-l-2 border-blue-500 pl-3 bg-blue-900/5 p-2 rounded">
+                        <span class="text-[10px] font-black text-blue-400 uppercase">${data.bot_status.current_action}</span>
+                        <span class="text-[9px] text-gray-400">${data.bot_status.planning_notes}</span>
+                        <span class="text-[8px] text-gray-600">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                `;
+                if (planningLog.dataset.lastAction !== data.bot_status.current_action) {
+                    planningLog.innerHTML = logEntry + planningLog.innerHTML;
+                    planningLog.dataset.lastAction = data.bot_status.current_action;
+                }
+
+                // Positions
+                if (data.positions) {
+                    const posList = document.getElementById('positions-list');
+                    posList.innerHTML = data.positions.map(p => `
+                        <div class="flex justify-between items-center bg-white/[0.03] border border-white/5 p-3 rounded hover:bg-white/[0.05] transition-all">
+                            <div>
+                                <div class="text-[10px] font-black text-white">${p.symbol} <span class="${p.type.includes('BUY') ? 'text-emerald-500' : 'text-red-500'}">${p.type}</span></div>
+                                <div class="text-[9px] text-gray-500">Price: ${p.price_open.toFixed(5)} | SL: ${p.sl.toFixed(5)}</div>
+                            </div>
+                            <div class="text-xs font-black mono ${p.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}">${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('pos-count').textContent = `${data.positions.length}_ACTIVE`;
+                }
+
+                // Observations
+                if (data.observations) {
+                    const obsList = document.getElementById('observations-list');
+                    obsList.innerHTML = data.observations.map(o => `
+                        <div class="flex justify-between items-center bg-white/[0.02] border border-white/5 p-2 rounded opacity-80">
+                            <div class="text-[9px]">
+                                <span class="font-bold text-blue-400">${o.symbol}</span> 
+                                <span class="text-gray-500">${o.reason.substring(0, 30)}...</span>
+                            </div>
+                            <div class="text-[9px] font-black text-gray-600">${o.finy} ALPHA</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Macro Feed
+                if (data.news) {
+                    const eventsStream = document.getElementById('events-stream');
+                    eventsStream.innerHTML = data.news.map(n => `
+                        <div class="border-l border-white/10 pl-3 py-1">
+                            <div class="text-[10px] text-gray-300 font-bold leading-tight">${n.title}</div>
+                            <div class="text-[8px] text-gray-600 mt-1">${n.published}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Stats
+                if (data.stats) {
+                    document.getElementById('stat-winrate').textContent = (data.stats.win_rate || 0) + '%';
+                    document.getElementById('stat-total').textContent = data.stats.total_trades || 0;
+                    document.getElementById('stat-avg').textContent = (data.stats.avg_profit || 0).toFixed(2);
+                }
+
+                // Settings Panel
+                if (data.settings) {
+                    const statusText = data.settings.trading_enabled ? 'LIVE' : 'SAFE MODE';
+                    const statusColor = data.settings.trading_enabled ? 'text-emerald-500' : 'text-blue-500';
+                    const settingsHTML = `
+                        <div class="p-3 bg-white/[0.02] border border-white/5 rounded mt-4">
+                            <div class="text-[9px] font-bold text-gray-600 uppercase">System Context</div>
+                            <div class="text-[11px] font-black ${statusColor} mt-1">${statusText} | RISK: ${data.settings.risk_pct}%</div>
+                        </div>
+                    `;
+                    const container = document.getElementById('settings-context-box') || document.createElement('div');
+                    container.id = 'settings-context-box';
+                    container.innerHTML = settingsHTML;
+                    if (!document.getElementById('settings-context-box')) {
+                        document.querySelector('.sidebar').appendChild(container);
+                    }
+                }
+
+            } catch (e) { console.error("Stream process fail", e); }
+        }
         updateHUD();
         lucide.createIcons();
+        // Neural Wave Animation
+        const canvas = document.getElementById('neural-wave');
+        const ctx = canvas.getContext('2d');
+        let waveStep = 0;
+        
+        function animateWave() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#3b82f6';
+            
+            const isActive = document.getElementById('bot-action').textContent !== 'AWAITING_PULSE';
+            const speed = isActive ? 0.2 : 0.05;
+            const amplitude = isActive ? 10 : 3;
+            
+            for (let x = 0; x < canvas.width; x++) {
+                const y = 15 + Math.sin(x * 0.1 + waveStep) * amplitude;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            
+            ctx.stroke();
+            waveStep += speed;
+            requestAnimationFrame(animateWave);
+        }
+        animateWave();
     </script>
 </body>
 </html>
@@ -526,14 +1008,52 @@ def dashboard():
     if not session.get('logged_in'): return redirect(url_for('login'))
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/api/data')
-def get_data():
-    if not session.get('logged_in'): return jsonify({"error": "unauthorized"}), 401
+# Caching for high-frequency stream
+STREAM_CACHE = {
+    "news": [], "stats": {}, "observations": [], "last_heavy_fetch": 0
+}
+
+def background_fetcher():
+    """Heavy data fetcher running in a background thread."""
+    global STREAM_CACHE
+    while True:
+        try:
+            # 1. Fetch News
+            STREAM_CACHE["news"] = fetch_market_news()
+            
+            # 2. Fetch DB Stats
+            conn = sqlite3.connect("axon_trading.db")
+            c = conn.cursor()
+            c.execute("SELECT COUNT(*), SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END), AVG(pnl) FROM trades")
+            row = c.fetchone()
+            if row and row[0]:
+                STREAM_CACHE["stats"] = {
+                    "total_trades": int(row[0]),
+                    "win_rate": round((float(row[1] or 0) / float(row[0])) * 100, 1),
+                    "avg_profit": round(float(row[2] or 0), 2)
+                }
+            # 3. Fetch Observations
+            c.execute("SELECT symbol, direction, entry_price, finy_score, reason, timestamp FROM observations ORDER BY timestamp DESC LIMIT 10")
+            STREAM_CACHE["observations"] = [{
+                "symbol": r[0], "direction": r[1], "price": r[2], "finy": r[3], "reason": r[4], "time": r[5]
+            } for r in c.fetchall()]
+            conn.close()
+        except Exception as e:
+            print("Background Fetcher Error:", e)
+        time.sleep(30) # Refresh every 30s in background
+
+# Start background thread
+threading.Thread(target=background_fetcher, daemon=True).start()
+
+def get_data_bundle():
+    global STREAM_CACHE
     settings_row = db.get_system_settings()
     settings = dict(settings_row)
     positions = []
     live_data = []
     account = {"equity": 0}
+    
+    # 1. Market Data
     if mt5.initialize():
         acc_info = mt5.account_info()
         if acc_info: account["equity"] = acc_info.equity
@@ -556,105 +1076,36 @@ def get_data():
         if res:
             for p in res:
                 positions.append({
-                    "ticket": p.ticket, 
-                    "symbol": p.symbol, 
-                    "volume": p.volume, 
-                    "profit": round(p.profit, 2),
-                    "price_open": p.price_open,
-                    "sl": p.sl,
-                    "tp": p.tp,
-                    "type": "BUY" if p.type == 0 else "SELL"
+                    "ticket": p.ticket, "symbol": p.symbol, "volume": p.volume, 
+                    "profit": round(p.profit, 2), "price_open": p.price_open,
+                    "sl": p.sl, "tp": p.tp, "type": "BUY" if p.type == 0 else "SELL"
                 })
 
-    global EVENTS_CACHE
-    if time.time() - EVENTS_CACHE["last_fetch"] < 300:
-        events = EVENTS_CACHE["data"]
-    else:
-        events = []
-        try:
-            now_utc = datetime.datetime.now(datetime.timezone.utc)
-            start_day = now_utc.replace(hour=0, minute=0, second=0)
-            end_day = now_utc.replace(hour=23, minute=59, second=59)
-            majors = ["USD", "EUR", "GBP", "JPY", "AUD"]
-            for curr in majors:
-                evs = mt5.calendar_events_get(
-                    time_from=int(start_day.timestamp()),
-                    time_to=int(end_day.timestamp()),
-                    currency=curr,
-                    importance=mt5.CALENDAR_IMPORTANCE_HIGH
-                )
-                if evs:
-                    for e in evs:
-                        events.append({"curr": curr, "time": e.time, "name": e.name})
-            events.sort(key=lambda x: x["time"])
-            # Format events time
-            for e in events:
-                dt_obj = datetime.datetime.fromtimestamp(e["time"], datetime.timezone.utc)
-                e["time_str"] = dt_obj.strftime("%H:%M UTC")
-            
-            EVENTS_CACHE["data"] = events
-            EVENTS_CACHE["last_fetch"] = time.time()
-        except: pass
-        events = EVENTS_CACHE["data"]
+    bot_status_row = db.get_bot_status()
+    bot_status = dict(bot_status_row) if bot_status_row else None
+    all_symbol_statuses = db.get_all_symbol_statuses()
 
-
-    observations = []
-    stats = {"win_rate": 0, "total_trades": 0, "avg_profit": 0}
-    try:
-        conn = sqlite3.connect("axon_trading.db")
-        # Do not use row_factory here to avoid serialization issues
-        c = conn.cursor()
-        
-        # Observations
-        c.execute("SELECT symbol, direction, entry_price, finy_score, reason, timestamp FROM observations ORDER BY timestamp DESC LIMIT 20")
-        for row in c.fetchall():
-            observations.append({
-                "symbol": str(row[0]), 
-                "direction": str(row[1]), 
-                "price": float(row[2]), 
-                "finy": float(row[3]), 
-                "reason": str(row[4]), 
-                "time": str(row[5])
-            })
-        
-        # Stats
-        try:
-            c.execute("SELECT COUNT(*), SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END), AVG(pnl) FROM trades")
-            row = c.fetchone()
-            if row and row[0] and row[0] > 0:
-                stats = {
-                    "total_trades": int(row[0]),
-                    "win_rate": round((float(row[1] or 0) / float(row[0])) * 100, 1),
-                    "avg_profit": round(float(row[2] or 0), 2)
-                }
-        except Exception as e:
-            print("Stats Error:", e)
-        
-        conn.close()
-    except Exception as e:
-        print("DB Error:", e)
-
-    finy_thoughts = [
-        "Analyzing multi-timeframe order flow divergence...",
-        "Institutional volume detected in EURUSD sell-side.",
-        "Market sentiment shifting to RISK_OFF. High volatility expected.",
-        "Neural probe suggests liquidity grab near current resistance.",
-        "Cross-asset correlation suggests USD strength is peaking."
-    ]
-    import random
-    thought = random.choice(finy_thoughts)
-
-    return jsonify({
+    return {
         "live_data": live_data, 
         "positions": positions, 
         "account": account, 
-        "events": events, 
-        "news": fetch_market_news(), 
-        "settings": settings, 
-        "observations": observations,
-        "stats": stats,
-        "finy_thought": thought
-    })
+        "bot_status": bot_status,
+        "symbol_statuses": all_symbol_statuses,
+        "settings": settings,
+        "news": STREAM_CACHE["news"],
+        "stats": STREAM_CACHE["stats"],
+        "observations": STREAM_CACHE["observations"]
+    }
+
+@app.route('/stream')
+def stream():
+    if not session.get('logged_in'): return "Unauthorized", 401
+    def event_stream():
+        while True:
+            data = get_data_bundle()
+            yield f"data: {json.dumps(data)}\n\n"
+            time.sleep(0.3)
+    return Response(event_stream(), mimetype="text/event-stream")
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():

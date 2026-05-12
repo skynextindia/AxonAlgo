@@ -35,7 +35,7 @@ class MT5Client:
         return symbol
 
     @staticmethod
-    def get_market_data(symbol, timeframe, count=500):
+    def get_market_data(symbol, timeframe, count=1000):
         try:
             rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, count)
             if rates is None or len(rates) == 0:

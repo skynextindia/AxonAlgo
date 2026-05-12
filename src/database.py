@@ -58,6 +58,31 @@ class TradingDatabase:
                 cursor.execute("SELECT count(*) FROM settings")
                 if cursor.fetchone()[0] == 0:
                     cursor.execute("INSERT INTO settings (id, risk_pct, trading_enabled, symbols) VALUES (1, 1.0, 0, 'XAUUSDm,EURUSDm,GBPJPYm')")
+
+                # --- PER-SYMBOL STATUS (Persistent Matrix) ---
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS symbol_status (
+                        symbol TEXT PRIMARY KEY,
+                        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        strategy_alignment TEXT,
+                        current_indicators TEXT
+                    )
+                """)
+                # --- SYSTEM STATUS (LIVE ACTIONS) ---
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS system_status (
+                        id INTEGER PRIMARY KEY,
+                        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        current_action TEXT,
+                        current_symbol TEXT,
+                        planning_notes TEXT,
+                        strategy_alignment TEXT,
+                        current_indicators TEXT
+                    )
+                """)
+                cursor.execute("SELECT count(*) FROM system_status")
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute("INSERT INTO system_status (id, current_action, current_symbol, planning_notes, strategy_alignment, current_indicators) VALUES (1, 'INITIALIZING', 'NONE', 'Syncing nodes...', '{}', '{}')")
                 conn.commit()
         except Exception as e:
             logger.error(f"Database Initialization Failed: {e}")
@@ -71,6 +96,48 @@ class TradingDatabase:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE settings SET risk_pct = ?, trading_enabled = ?, symbols = ? WHERE id = 1",
                         (risk, 1 if enabled else 0, symbols))
+
+    def update_bot_status(self, action, symbol="NONE", notes="", alignment="{}", indicators="{}"):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # 1. Update Global Action
+                conn.execute("""
+                    UPDATE system_status 
+                    SET current_action = ?, current_symbol = ?, planning_notes = ?, strategy_alignment = ?, current_indicators = ?, last_updated = CURRENT_TIMESTAMP 
+                    WHERE id = 1
+                """, (action, symbol, notes, alignment, indicators))
+                
+                # 2. Update Persistent Symbol Matrix
+                if symbol != "NONE":
+                    conn.execute("""
+                        INSERT INTO symbol_status (symbol, strategy_alignment, current_indicators, last_updated)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(symbol) DO UPDATE SET
+                            strategy_alignment=excluded.strategy_alignment,
+                            current_indicators=excluded.current_indicators,
+                            last_updated=excluded.last_updated
+                    """, (symbol, alignment, indicators))
+        except Exception as e:
+            logger.error(f"Failed to update bot status: {e}")
+
+    def get_all_symbol_statuses(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute("SELECT * FROM symbol_status").fetchall()
+                return {r['symbol']: dict(r) for r in rows}
+        except Exception as e:
+            logger.error(f"Failed to fetch symbol statuses: {e}")
+            return {}
+
+    def get_bot_status(self):
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                return conn.execute("SELECT * FROM system_status WHERE id = 1").fetchone()
+        except Exception as e:
+            logger.error(f"Failed to fetch bot status: {e}")
+            return None
 
     def log_trade(self, symbol, trade_type, lots, entry, sl, tp, reason="", criteria=""):
         """Records a new open trade with execution logic."""
