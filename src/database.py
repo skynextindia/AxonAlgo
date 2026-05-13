@@ -37,6 +37,7 @@ class TradingDatabase:
                         id INTEGER PRIMARY KEY,
                         risk_pct REAL,
                         trading_enabled INTEGER,
+                        min_alpha_score REAL DEFAULT 0.75,
                         symbols TEXT
                     )
                 """)
@@ -57,7 +58,7 @@ class TradingDatabase:
                 # Initialize default settings if empty
                 cursor.execute("SELECT count(*) FROM settings")
                 if cursor.fetchone()[0] == 0:
-                    cursor.execute("INSERT INTO settings (id, risk_pct, trading_enabled, symbols) VALUES (1, 1.0, 0, 'XAUUSDm,EURUSDm,GBPJPYm')")
+                    cursor.execute("INSERT INTO settings (id, risk_pct, trading_enabled, min_alpha_score, symbols) VALUES (1, 1.0, 0, 0.75, 'XAUUSDm,EURUSDm,GBPJPYm')")
 
                 # --- PER-SYMBOL STATUS (Persistent Matrix) ---
                 cursor.execute("""
@@ -92,10 +93,10 @@ class TradingDatabase:
             conn.row_factory = sqlite3.Row
             return conn.execute("SELECT * FROM settings WHERE id = 1").fetchone()
 
-    def update_system_settings(self, risk, enabled, symbols):
+    def update_system_settings(self, risk, enabled, symbols, min_alpha=0.75):
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("UPDATE settings SET risk_pct = ?, trading_enabled = ?, symbols = ? WHERE id = 1",
-                        (risk, 1 if enabled else 0, symbols))
+            conn.execute("UPDATE settings SET risk_pct = ?, trading_enabled = ?, symbols = ?, min_alpha_score = ? WHERE id = 1",
+                        (risk, 1 if enabled else 0, symbols, min_alpha))
 
     def update_bot_status(self, action, symbol="NONE", notes="", alignment="{}", indicators="{}"):
         try:

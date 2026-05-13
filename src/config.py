@@ -13,6 +13,7 @@ class Config:
     ZONE_THRESHOLD = float(os.getenv("ZONE_THRESHOLD_PIPS", 15))
     RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", 0.01))
     MIN_RR = float(os.getenv("MIN_RR", 1.5))
+    MIN_ALPHA_SCORE = float(os.getenv("MIN_ALPHA_SCORE", 0.75))
     TRADING_ENABLED = os.getenv("TRADING_ENABLED", "False").lower() == "true"
     MAX_SPREAD_PIPS = float(os.getenv("MAX_SPREAD_PIPS", 3.0))
     # Sessions in UTC: London (8-16), New York (13-21)

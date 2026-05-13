@@ -3,10 +3,13 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 from src.engines.sr_engine import SREngine
+from src.engines.news_engine import NewsEngine
+from src.config import Config
 
 class SynergyEngine:
     def __init__(self):
         self.sr_engine = SREngine(zone_threshold_pips=20)
+        self.news_engine = NewsEngine(buffer_minutes=60)
         self.weights = {
             "technical": 0.4,
             "momentum": 0.2,
@@ -16,28 +19,39 @@ class SynergyEngine:
 
     def analyze(self, symbol, df_m15, df_h4, df_d1, symbol_info, db):
         """
-        Master 9-Layer Alignment Strategy (Institutional Rematch).
+        Master 9-Layer Alignment Strategy with Weighted Scalar Scoring.
+        Returns alignment_score (0.0-1.0).
         """
         layers = {
-            "L1_TREND": "PENDING", "L2_STRUCTURE": "PENDING", "L3_EMA": "PENDING",
-            "L4_MOMENTUM": "PENDING", "L5_CANDLE": "PENDING", "L6_VOLATILITY": "PENDING",
-            "L7_SPREAD": "PENDING", "L8_NEWS": "PENDING", "L9_RR": "PENDING"
+            "L1_TREND": 0.0, "L2_STRUCTURE": 0.0, "L3_EMA": 0.0,
+            "L4_MOMENTUM": 0.0, "L5_CANDLE": 0.0, "L6_VOLATILITY": 0.0,
+            "L7_SPREAD": 0.0, "L8_NEWS": 0.0, "L9_RR": 0.0
         }
         
-        # PRE-CALCULATE INDICATORS FOR UI TRANSPARENCY
+        # Weights for scalar score (Adjusted for Institutional Bias)
+        weights = {
+            "L1_TREND": 0.20,      # HTF Context is King
+            "L2_STRUCTURE": 0.15,  # SMC Zones
+            "L3_EMA": 0.10,        # Dynamic Support
+            "L4_MOMENTUM": 0.10,   # RSI Pullback
+            "L5_CANDLE": 0.15,     # PA Execution Trigger
+            "L6_VOLATILITY": 0.10, # ATR Filter
+            "L7_SPREAD": 0.05,     # Execution Cost
+            "L8_NEWS": 0.10,       # Macro Filter
+            "L9_RR": 0.05          # Math Validation
+        }
+
+        # PRE-CALCULATE INDICATORS
         if len(df_m15) >= 14:
             df_m15['rsi'] = ta.rsi(df_m15['close'], length=14)
             df_m15['ema50'] = ta.ema(df_m15['close'], length=50)
             df_m15['atr'] = ta.atr(df_m15['high'], df_m15['low'], df_m15['close'], length=14)
             
-            # STABILITY LOGIC: Use iloc[-2] for Dashboard matching
             current_rsi = df_m15['rsi'].iloc[-2] if len(df_m15) > 2 else df_m15['rsi'].iloc[-1]
             current_atr = df_m15['atr'].iloc[-1] if not df_m15['atr'].empty else 0
             current_ema50 = df_m15['ema50'].iloc[-2] if not df_m15['ema50'].empty else 0
         else:
-            current_rsi = 0
-            current_atr = 0
-            current_ema50 = 0
+            current_rsi, current_atr, current_ema50 = 0, 0, 0
         
         l1_ok, l1_dir = self._check_layer1_trend(df_d1)
 
@@ -46,60 +60,68 @@ class SynergyEngine:
             "RSI": f"M15 RSI: {round(current_rsi, 1)}",
             "EMA": f"M15 EMA50: {round(current_ema50, 2)}",
             "ATR": f"ATR: {round(current_atr, 5)}",
-            "SMC": "SCANNING...",
-            "PA": "WAITING...",
-            "SPREAD": "FETCHING...",
-            "NEWS": "CHECKING...",
-            "RR": "1:2.5 (Fixed)"
+            "SMC": "SCANNING...", "PA": "WAITING...", "SPREAD": "FETCHING...", "NEWS": "CHECKING...", "RR": "1:2.5"
         }
 
-        # Layer 1: HTF Trend
-        layers["L1_TREND"] = "PASS" if l1_ok else "FAIL"
-
-        # Layer 2: H4 Institutional Structure (SMC Only)
+        # CALCULATE SCALAR LAYERS
+        if l1_ok: layers["L1_TREND"] = 1.0
+        
         l2_ok, l2_msg = self._check_layer2_smc_only(df_h4, l1_dir if l1_ok else "FLAT")
-        layers["L2_STRUCTURE"] = "PASS" if l2_ok else "FAIL"
+        if l2_ok: layers["L2_STRUCTURE"] = 1.0
         indicators["SMC"] = l2_msg
 
-        # Layer 3: EMA Confluence (M15 Retest)
         l3_ok, l3_msg = self._check_layer3_ema_retest(df_m15, l1_dir if l1_ok else "FLAT")
-        layers["L3_EMA"] = "PASS" if l3_ok else "FAIL"
+        if l3_ok: layers["L3_EMA"] = 1.0
         indicators["EMA"] = f"M15 EMA50: {round(current_ema50, 2)} ({l3_msg})"
 
-        # Layer 4: RSI Momentum Pullback
         l4_ok, l4_msg = self._check_layer4_rsi(df_m15, l1_dir if l1_ok else "FLAT")
-        layers["L4_MOMENTUM"] = "PASS" if l4_ok else "FAIL"
+        if l4_ok: layers["L4_MOMENTUM"] = 1.0
         indicators["RSI"] = f"M15 RSI: {round(current_rsi, 1)} ({l4_msg})"
 
-        # Layer 5: Candle Pattern confirmation
         from src.engines.candle_engine import CandleEngine
         pattern_type = "BULLISH_BREAKOUT" if (not l1_ok or l1_dir == "BUY") else "BEARISH_BREAKOUT"
         found_pattern = CandleEngine.get_confirmed_pattern(df_m15, pattern_type)
-        layers["L5_CANDLE"] = "PASS" if found_pattern else "FAIL"
+        if found_pattern: layers["L5_CANDLE"] = 1.0
         last_time = df_m15['time'].iloc[-1].strftime('%H:%M') if 'time' in df_m15 else "??:??"
         indicators["PA"] = f"M15 {found_pattern} (@{last_time})" if found_pattern else "NO_PATTERN"
 
-        # Layer 6: Volatility Filter
-        l6_ok, atr_val = self._check_layer6_volatility(df_m15)
-        layers["L6_VOLATILITY"] = "PASS" if l6_ok else "FAIL"
+        l6_ok, _ = self._check_layer6_volatility(df_m15)
+        if l6_ok: layers["L6_VOLATILITY"] = 1.0
 
-        # Layer 7/8/9: Filters & RR
-        layers["L7_SPREAD"] = "PASS"
-        layers["L8_NEWS"] = "PASS"
-        layers["L9_RR"] = "PASS"
+        # Layer 7: Dynamic Spread Filtering
+        max_spread = symbol_info.spread_limit if hasattr(symbol_info, 'spread_limit') else Config.MAX_SPREAD_PIPS * 10
+        if symbol_info.spread <= max_spread:
+            layers["L7_SPREAD"] = 1.0
+            indicators["SPREAD"] = f"OK ({symbol_info.spread})"
+        else:
+            layers["L7_SPREAD"] = 0.0
+            indicators["SPREAD"] = f"HIGH ({symbol_info.spread})"
         
-        indicators["SPREAD"] = f"OK ({symbol_info.spread})"
-        indicators["NEWS"] = "NO_IMPACT"
+        is_news_volatile, news_name = self.news_engine.is_volatile_now(symbol)
+        if not is_news_volatile:
+            layers["L8_NEWS"] = 1.0
+            indicators["NEWS"] = "NO_IMPACT"
+        else:
+            layers["L8_NEWS"] = 0.0
+            indicators["NEWS"] = f"HIGH_IMPACT: {news_name}"
 
-        all_passed = all(v == "PASS" for v in layers.values())
+        layers["L9_RR"] = 1.0     # Fixed RR for now
+        indicators["RR"] = "1:2.5"
+
+        # Final Scalar Calculation
+        alignment_score = sum(layers[k] * weights[k] for k in layers)
         
+        # Mapping layers back to PASS/FAIL for UI backward compatibility
+        ui_layers = {k: "PASS" if v > 0.5 else "FAIL" for k, v in layers.items()}
+
         return {
-            "direction": l1_dir if all_passed else "FLAT",
-            "alpha": 100 if all_passed else 0,
+            "direction": l1_dir if alignment_score >= 0.7 else "FLAT",
+            "alignment_score": round(alignment_score, 2),
+            "alpha": round(alignment_score * 100, 0),
             "atr": current_atr,
-            "layers": layers,
+            "layers": ui_layers,
             "indicators": indicators,
-            "reason": f"STRATEGY_MATCH: 9-Layer Alignment confirmed." if all_passed else "AWAITING_ALIGNMENT"
+            "reason": f"ALIGNED: {int(alignment_score*100)}%" if alignment_score >= 0.7 else "DIVERGENCE"
         }
 
     def _check_layer1_trend(self, df):

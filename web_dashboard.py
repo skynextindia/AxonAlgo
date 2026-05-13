@@ -321,6 +321,10 @@ HTML_TEMPLATE = """
                             </select>
                         </div>
                         <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Min Alpha Score (Confidence)</label>
+                            <input type="number" step="0.01" name="min_alpha" class="w-full bg-black border border-white/10 p-2 text-white outline-none" placeholder="e.g. 0.75">
+                        </div>
+                        <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Risk Per Trade (%)</label>
                             <input type="number" step="0.01" name="risk_pct" class="w-full bg-black border border-white/10 p-2 text-white outline-none" placeholder="e.g. 1.0">
                         </div>
@@ -497,6 +501,8 @@ HTML_TEMPLATE = """
                     if(document.activeElement !== riskInput) riskInput.value = data.settings.risk_pct;
                     const modeSelect = document.querySelector('select[name="trading_enabled"]');
                     if(document.activeElement !== modeSelect) modeSelect.value = data.settings.trading_enabled;
+                    const alphaInput = document.querySelector('input[name="min_alpha"]');
+                    if(document.activeElement !== alphaInput) alphaInput.value = data.settings.min_alpha_score;
                 }
 
                 // Finy Observations
@@ -1246,6 +1252,7 @@ def update_settings():
     if not session.get('logged_in'): return redirect(url_for('login'))
     risk_pct = request.form.get('risk_pct')
     trading_enabled = request.form.get('trading_enabled')
+    min_alpha = request.form.get('min_alpha')
     settings = db.get_system_settings()
     
     if risk_pct is not None:
@@ -1253,11 +1260,16 @@ def update_settings():
         except: risk_pct = settings['risk_pct']
     else: risk_pct = settings['risk_pct']
     
+    if min_alpha is not None:
+        try: min_alpha = float(min_alpha)
+        except: min_alpha = settings['min_alpha_score']
+    else: min_alpha = settings['min_alpha_score']
+
     if trading_enabled is not None:
         trading_enabled = int(trading_enabled)
     else: trading_enabled = settings['trading_enabled']
     
-    db.update_system_settings(risk_pct, trading_enabled, settings['symbols'])
+    db.update_system_settings(risk_pct, trading_enabled, settings['symbols'], min_alpha)
     return redirect(url_for('dashboard'))
 
 @app.route('/add_symbol', methods=['POST'])
@@ -1268,7 +1280,7 @@ def add_symbol():
     new_sym = request.form.get('symbol', '').strip()
     if new_sym and new_sym not in syms:
         syms.append(new_sym)
-        db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
+        db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms), settings['min_alpha_score'])
     return redirect(url_for('dashboard'))
 
 @app.route('/remove_symbol/<symbol>')
@@ -1276,7 +1288,7 @@ def remove_symbol(symbol):
     if not session.get('logged_in'): return redirect(url_for('login'))
     settings = db.get_system_settings()
     syms = [s.strip() for s in settings['symbols'].split(',') if s.strip() and s.strip().lower() != symbol.strip().lower()]
-    db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms))
+    db.update_system_settings(settings['risk_pct'], settings['trading_enabled'], ",".join(syms), settings['min_alpha_score'])
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
